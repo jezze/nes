@@ -1,14 +1,10 @@
-extern unsigned char memory_read(unsigned int address);
-extern void write_memory(unsigned int address,unsigned char data);
-extern void set_input(int pad_key);
-extern void clear_input(int pad_key);
+unsigned char memory_read(unsigned int address);
+void write_memory(unsigned int address,unsigned char data);
+void set_input(int pad_key);
+void clear_input(int pad_key);
+void halt();
+
 extern unsigned char *romcache;
-extern unsigned char *ppu_memory;
-extern int CPU_is_running;
-extern int height;
-extern int width;
-extern int sdl_screen_height;
-extern int sdl_screen_width;
 extern long romlen;
-extern unsigned char *memory;
 extern unsigned int tmp;
+extern unsigned char memory[65536];

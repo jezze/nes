@@ -3,7 +3,6 @@
 #include "instructions.h"
 #include "nes.h"
 
-unsigned char *memory;
 unsigned int tmp;
 
 static int zero_flag;

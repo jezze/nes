@@ -36,10 +36,10 @@ static struct
 void video_drawpixel(int x, int y, int nescolor)
 {
 
-    if ((x >= sdl_screen_width) || (x < 0))
+    if ((x >= screen->w) || (x < 0))
         return;
 
-    if ((y >= sdl_screen_height) || (y < 0))
+    if ((y >= screen->h) || (y < 0))
         return;
 
     if (!nescolor)
@@ -51,10 +51,8 @@ void video_drawpixel(int x, int y, int nescolor)
 
 }
 
-void video_clear()
+void video_clear(int nescolor)
 {
-
-    int nescolor = ppu_memory[0x3f00];
 
     SDL_Flip(screen);
     SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, palette[nescolor].r, palette[nescolor].g, palette[nescolor].b));
@@ -81,7 +79,7 @@ void video_unlock()
 
 }
 
-void video_init()
+void video_init(int w, int h)
 {
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -89,7 +87,7 @@ void video_init()
 
     atexit(SDL_Quit);
 
-    screen = SDL_SetVideoMode(sdl_screen_width, sdl_screen_height, 32, SDL_SWSURFACE | SDL_DOUBLEBUF);
+    screen = SDL_SetVideoMode(w, h, 32, SDL_SWSURFACE | SDL_DOUBLEBUF);
 
     if (screen == NULL)
         exit(1);
@@ -149,7 +147,7 @@ void video_event()
                 break;
 
             case SDLK_ESCAPE:
-                CPU_is_running = 0;
+                halt();
 
                 break;
 

@@ -7,6 +7,7 @@
 #include "rom.h"
 #include "sdl.h"
 
+unsigned char ppu_memory[16384];
 unsigned int ppu_control1 = 0x00;
 unsigned int ppu_control2 = 0x00;
 unsigned int ppu_addr_h = 0x00;
@@ -207,7 +208,7 @@ void ppu_memwrite(unsigned int address, unsigned char data)
 
 }
 
-void ppu_checkspritehit(int scanline)
+void ppu_checkspritehit(int width, int scanline)
 {
 
     int i;
@@ -231,10 +232,7 @@ void ppu_renderbackground(int scanline)
     int at_addr;
     int x_scroll;
     int y_scroll;
-    int pt_addr;
     int attribs;
-    unsigned char bit1[8];
-    unsigned char bit2[8];
     unsigned char tile[8];
 
     loopyV &= 0xfbe0;
@@ -268,31 +266,28 @@ void ppu_renderbackground(int scanline)
     {
 
         int ttc = tile_count << 3;
-
-        pt_addr = (ppu_memory[nt_addr] << 4) + ((loopyV & 0x7000) >> 12);
+        int pt_addr = (ppu_memory[nt_addr] << 4) + ((loopyV & 0x7000) >> 12);
+        char a1, a2;
 
         if (background_addr_hi)
             pt_addr += 0x1000;
 
-        for (i = 7; i >= 0; i--)
-        {
-
-            bit1[7 - i] = ((ppu_memory[pt_addr] >> i) & 0x01) ? 1 : 0;
-            bit2[7 - i] = ((ppu_memory[pt_addr + 8] >> i) & 0x01) ? 1 : 0;
-
-        }
+        a1 = ppu_memory[pt_addr];
+        a2 = ppu_memory[pt_addr + 8];
 
         for (i = 0; i < 8; i++)
         {
 
-            if ((bit1[i] == 0) && (bit2[i] == 0))
-                tile[i] = 0;
-            else if ((bit1[i] == 1) && (bit2[i] == 0))
-                tile[i] = (1 + attribs);
-            else if ((bit1[i] == 0) && (bit2[i] == 1))
-                tile[i] = (2 + attribs);
-            else if ((bit1[i] == 1) && (bit2[i] == 1))
-                tile[i] = (3 + attribs);
+            tile[i] = 0;
+
+            if (a1 & (0x80 >> i))
+                tile[i] += 1;
+
+            if (a2 & (0x80 >> i))
+                tile[i] += 2;
+
+            if (tile[i])
+                tile[i] += attribs;
 
         }
 
@@ -522,16 +517,6 @@ static void ppu_rendersprite(int y, int x, int pattern_number, int attribs, int 
                 sprite[i][j] = 2 + ((attribs & 0x03) << 0x02);
             else if ((bit1[i][j] == 1) && (bit2[i][j] == 1))
                 sprite[i][j] = 3 + ((attribs & 0x03) << 0x02);
-
-        }
-
-    }
-
-    for (i = 0; i < imax; i++)
-    {
-
-        for (j = 0; j < jmax; j++)
-        {
 
             if (spr_nr == 0)
                 sprcache[x + i][y + j] = sprite[i][j];

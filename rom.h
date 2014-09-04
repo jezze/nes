@@ -1,5 +1,6 @@
-extern int analyze_header(char *romfn);
-extern int load_rom(char *romfn);
+int analyze_header(char *romfn);
+int load_rom(char *romfn);
+
 extern unsigned char PRG;
 extern unsigned char CHR;
 extern unsigned char MAPPER;

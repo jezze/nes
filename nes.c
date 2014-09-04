@@ -12,22 +12,16 @@
 #include "cnrom.c"
 #include "mmc3.c"
 
-static char *romfn;
 unsigned char *romcache;
-unsigned char *ppu_memory;
-int start_int;
-int vblank_int;
-int vblank_cycle_timeout;
-int scanline_refresh;
-int CPU_is_running = 1;
-int height;
-int width;
-int sdl_screen_height;
-int sdl_screen_width;
+unsigned char memory[65536];
 long romlen;
 
+static int height;
+static int width;
 static int pad1_state[8];
 static int pad1_readcount = 0;
+static int running = 1;
+static char *romfn;
 
 void set_input(int pad_key)
 {
@@ -68,9 +62,9 @@ unsigned char memory_read(unsigned int address)
 
         ppu_status_tmp = ppu_status;
         ppu_status &= 0x7F;
-        write_memory(0x2002,ppu_status);
+        write_memory(0x2002, ppu_status);
         ppu_status &= 0x1F;
-        write_memory(0x2002,ppu_status);
+        write_memory(0x2002, ppu_status);
         ppu_bgscr_f = 0x00;
         ppu_addr_h = 0x00;
 
@@ -138,6 +132,7 @@ unsigned char memory_read(unsigned int address)
     }
 
     return memory[address];
+
 }
 
 void write_memory(unsigned int address,unsigned char data)
@@ -261,13 +256,13 @@ void write_memory(unsigned int address,unsigned char data)
 
 }
 
-static void start_emulation()
+static void start_emulation(int start_int, int vblank_int, int vblank_timeout, int scanline_refresh)
 {
 
     int counter = 0;
     int scanline = 0;
 
-    while (CPU_is_running)
+    while (running)
     {
 
         cpu_execute(start_int);
@@ -280,10 +275,10 @@ static void start_emulation()
         if (exec_nmi_on_vblank)
             counter += cpu_nmi(counter);
 
-        counter += cpu_execute(vblank_cycle_timeout);
+        counter += cpu_execute(vblank_timeout);
         ppu_status &= 0x3F;
 
-        write_memory(0x2002,ppu_status);
+        write_memory(0x2002, ppu_status);
 
         loopyV = loopyT;
 
@@ -293,7 +288,7 @@ static void start_emulation()
         {
 
             if (!sprite_zero)
-                ppu_checkspritehit(scanline);
+                ppu_checkspritehit(width, scanline);
 
             ppu_renderbackground(scanline);
 
@@ -316,67 +311,45 @@ static void start_emulation()
 
         ppu_rendersprites();
         video_unlock();
-        video_clear();
+        video_clear(ppu_memory[0x3f00]);
         video_event();
 
     }
 
 }
 
+void halt()
+{
+
+    running = 0;
+
+}
+
 int main(int argc, char **argv)
 {
 
-    int PAL_SPEED = 1773447;
-    int PAL_VBLANK_INT = PAL_SPEED / 50;
-    int PAL_SCANLINE_REFRESH = PAL_VBLANK_INT / 313;
-    int PAL_VBLANK_CYCLE_TIMEOUT = (313 - 240) * PAL_VBLANK_INT / 313;
-    int i;
+    int pal_speed = 1773447;
+    int pal_start_int = 341;
+    int pal_vblank_int = pal_speed / 50;
+    int pal_vblank_timeout = (313 - 240) * pal_vblank_int / 313;
+    int pal_scanline_refresh = pal_vblank_int / 313;
 
     if (argc < 2)
-    {
-
         return 1;
 
-    }
-
-    for (i = 0; i < argc; i++)
-    {
-
-        if (i == 0)
-        {
-
-        }
-
-        else if (i == argc - 1)
-        {
-
-            romfn = argv[i];
-
-        }
-
-    }
-
-    memory = (unsigned char *)malloc(65536);
-    ppu_memory = (unsigned char *)malloc(16384);
+    romfn = argv[1];
 
     if (analyze_header(romfn) == 1)
-    {
-
-        free(ppu_memory);
-        free(memory);
-        exit(1);
-
-    }
+        return 1;
 
     romcache = (unsigned char *)malloc(romlen);
 
     if (load_rom(romfn) == 1)
     {
 
-        free(ppu_memory);
-        free(memory);
         free(romcache);
-        exit(1);
+
+        return 1;
 
     }
 
@@ -388,21 +361,12 @@ int main(int argc, char **argv)
 
     height = 240;
     width = 256;
-    sdl_screen_height = height;
-    sdl_screen_width = width;
 
-    video_init();
+    video_init(width, height);
     cpu_reset();
     reset_input();
 
-    start_int = 341;
-    vblank_int = PAL_VBLANK_INT;
-    vblank_cycle_timeout = PAL_VBLANK_CYCLE_TIMEOUT;
-    scanline_refresh = PAL_SCANLINE_REFRESH;
-
-    start_emulation();
-    free(ppu_memory);
-    free(memory);
+    start_emulation(pal_start_int, pal_vblank_int, pal_vblank_timeout, pal_scanline_refresh);
     free(romcache);
 
     return 0;

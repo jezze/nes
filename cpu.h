@@ -1,4 +1,4 @@
-extern int cpu_irq(int cycles);
-extern int cpu_nmi(int cycles);
-extern void cpu_reset(void);
-extern int cpu_execute(int cycles);
+int cpu_irq(int cycles);
+int cpu_nmi(int cycles);
+void cpu_reset(void);
+int cpu_execute(int cycles);

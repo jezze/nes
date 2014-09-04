@@ -1,8 +1,8 @@
-extern void video_drawpixel(int x, int y, int nescolor);
-extern void video_clear();
-extern void video_lock();
-extern void video_unlock();
-extern void video_init();
-extern void video_event();
-extern void video_readsavefile(char *name);
-extern void video_writesavefile(char *name);
+void video_drawpixel(int x, int y, int nescolor);
+void video_clear(int nescolor);
+void video_lock();
+void video_unlock();
+void video_init(int w, int h);
+void video_event();
+void video_readsavefile(char *name);
+void video_writesavefile(char *name);

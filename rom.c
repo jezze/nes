@@ -3,6 +3,7 @@
 #include <string.h>
 #include "nes.h"
 #include "cpu.h"
+#include "ppu.h"
 #include "rom.h"
 
 unsigned char PRG;
