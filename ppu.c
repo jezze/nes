@@ -1,39 +1,11 @@
-#include <string.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <SDL/SDL.h>
+#include <stdio.h>
+#include <string.h>
 #include "nes.h"
 #include "cpu.h"
 #include "ppu.h"
 #include "rom.h"
 #include "sdl.h"
-
-struct
-{
-
-    char r;
-    char g;
-    char b;
-
-} palette[64] = {
-    {0x80,0x80,0x80},{0x00,0x3D,0xA6},{0x00,0x12,0xB0},{0x44,0x00,0x96},
-    {0xA1,0x00,0x5E},{0xC7,0x00,0x28},{0xBA,0x06,0x00},{0x8C,0x17,0x00},
-    {0x5C,0x2F,0x00},{0x10,0x45,0x00},{0x05,0x4A,0x00},{0x00,0x47,0x2E},
-    {0x00,0x41,0x66},{0x00,0x00,0x00},{0x05,0x05,0x05},{0x05,0x05,0x05},
-    {0xC7,0xC7,0xC7},{0x00,0x77,0xFF},{0x21,0x55,0xFF},{0x82,0x37,0xFA},
-    {0xEB,0x2F,0xB5},{0xFF,0x29,0x50},{0xFF,0x22,0x00},{0xD6,0x32,0x00},
-    {0xC4,0x62,0x00},{0x35,0x80,0x00},{0x05,0x8F,0x00},{0x00,0x8A,0x55},
-    {0x00,0x99,0xCC},{0x21,0x21,0x21},{0x09,0x09,0x09},{0x09,0x09,0x09},
-    {0xFF,0xFF,0xFF},{0x0F,0xD7,0xFF},{0x69,0xA2,0xFF},{0xD4,0x80,0xFF},
-    {0xFF,0x45,0xF3},{0xFF,0x61,0x8B},{0xFF,0x88,0x33},{0xFF,0x9C,0x12},
-    {0xFA,0xBC,0x20},{0x9F,0xE3,0x0E},{0x2B,0xF0,0x35},{0x0C,0xF0,0xA4},
-    {0x05,0xFB,0xFF},{0x5E,0x5E,0x5E},{0x0D,0x0D,0x0D},{0x0D,0x0D,0x0D},
-    {0xFF,0xFF,0xFF},{0xA6,0xFC,0xFF},{0xB3,0xEC,0xFF},{0xDA,0xAB,0xEB},
-    {0xFF,0xA8,0xF9},{0xFF,0xAB,0xB3},{0xFF,0xD2,0xB0},{0xFF,0xEF,0xA6},
-    {0xFF,0xF7,0x9C},{0xD7,0xE8,0x95},{0xA6,0xED,0xAF},{0xA2,0xF2,0xDA},
-    {0x99,0xFF,0xFC},{0xDD,0xDD,0xDD},{0x11,0x11,0x11},{0x11,0x11,0x11}
-};
 
 unsigned int ppu_control1 = 0x00;
 unsigned int ppu_control2 = 0x00;
@@ -51,7 +23,7 @@ static unsigned char sprite_memory[256];
 static unsigned char bgcache[256 + 8][256 + 8];
 static unsigned char sprcache[256 + 8][256 + 8];
 
-void write_ppu_memory(unsigned int address, unsigned char data)
+void ppu_memwrite(unsigned int address, unsigned char data)
 {
 
     int i;
@@ -191,14 +163,12 @@ void write_ppu_memory(unsigned int address, unsigned char data)
                 ppu_memory[ppu_addr + 0x1200] = data;
 
             }
-            
+
             else if (FS_MIRROR == 1)
             {
 
-                printf("FS_MIRRORING detected! do nothing\n");
-
             }
-            
+
             else
             {
 
@@ -237,25 +207,22 @@ void write_ppu_memory(unsigned int address, unsigned char data)
 
 }
 
-void draw_pixel(int x, int y, int nescolor)
+void ppu_checkspritehit(int scanline)
 {
 
-    if ((x >= sdl_screen_width) || (x < 0))
-        return;
+    int i;
 
-    if ((y >= sdl_screen_height) || (y < 0))
-        return;
+    for (i = 0; i < width; i++)
+    {
 
-    if (!nescolor)
-        return;
+        if ((bgcache[i] [scanline - 1] > 0x00) && (sprcache[i][scanline - 1] > 0x00))
+            ppu_status |= 0x40;
 
-    Uint32 *bufp = (Uint32 *)screen->pixels + y * screen->w + x;
-
-    *bufp = SDL_MapRGB(screen->format, palette[nescolor].r, palette[nescolor].g, palette[nescolor].b);
+    }
 
 }
 
-void render_background(int scanline)
+void ppu_renderbackground(int scanline)
 {
 
     int tile_count;
@@ -286,7 +253,7 @@ void render_background(int scanline)
             attribs = (ppu_memory[at_addr] & 0x0C);
 
     }
-    
+
     else
     {
 
@@ -336,7 +303,7 @@ void render_background(int scanline)
             {
 
                 bgcache[ttc + i][scanline] = tile[loopyX + i];
-                draw_pixel(ttc + i, scanline, ppu_memory[0x3f00 + (tile[loopyX + i])]);
+                video_drawpixel(ttc + i, scanline, ppu_memory[0x3f00 + (tile[loopyX + i])]);
 
             }
 
@@ -349,12 +316,12 @@ void render_background(int scanline)
             {
 
                 bgcache[ttc + i - loopyX][scanline] = tile[i];
-                draw_pixel(ttc + i - loopyX, scanline, ppu_memory[0x3f00 + (tile[i])]);
+                video_drawpixel(ttc + i - loopyX, scanline, ppu_memory[0x3f00 + (tile[i])]);
 
             }
 
         }
-        
+
         else
         {
 
@@ -362,7 +329,7 @@ void render_background(int scanline)
             {
 
                 bgcache[ttc + i - loopyX][scanline] = tile[i];
-                draw_pixel(ttc + i - loopyX, scanline, ppu_memory[0x3f00 + (tile[i])]);
+                video_drawpixel(ttc + i - loopyX, scanline, ppu_memory[0x3f00 + (tile[i])]);
 
             }
 
@@ -401,7 +368,7 @@ void render_background(int scanline)
                     attribs = ((ppu_memory[at_addr]) & 0x0C);
 
             }
-            
+
             else
             {
 
@@ -428,7 +395,7 @@ void render_background(int scanline)
             loopyV &= 0xfc1f;
 
         }
-        
+
         else
         {
 
@@ -440,7 +407,7 @@ void render_background(int scanline)
         }
 
     }
-    
+
     else
     {
 
@@ -450,7 +417,7 @@ void render_background(int scanline)
 
 }
 
-void render_sprite(int y, int x, int pattern_number, int attribs, int spr_nr)
+static void ppu_rendersprite(int y, int x, int pattern_number, int attribs, int spr_nr)
 {
 
     int disp_spr_back = attribs & 0x20;
@@ -486,7 +453,7 @@ void render_sprite(int y, int x, int pattern_number, int attribs, int spr_nr)
         }
 
     }
- 
+
     else if ((flip_spr_hor) && (!flip_spr_ver))
     {
 
@@ -558,7 +525,7 @@ void render_sprite(int y, int x, int pattern_number, int attribs, int spr_nr)
 
         }
 
-    }    
+    }
 
     for (i = 0; i < imax; i++)
     {
@@ -575,7 +542,7 @@ void render_sprite(int y, int x, int pattern_number, int attribs, int spr_nr)
                 if (!disp_spr_back)
                 {
 
-                    draw_pixel(x + i, y + j, ppu_memory[0x3f10 + (sprite[i][j])]);
+                    video_drawpixel(x + i, y + j, ppu_memory[0x3f10 + (sprite[i][j])]);
 
                 }
 
@@ -583,7 +550,7 @@ void render_sprite(int y, int x, int pattern_number, int attribs, int spr_nr)
                 {
 
                     if (bgcache[x + i][y + j] == 0)
-                        draw_pixel(x + i, y + j, ppu_memory[0x3f10 + (sprite[i][j])]);
+                        video_drawpixel(x + i, y + j, ppu_memory[0x3f10 + (sprite[i][j])]);
 
                 }
 
@@ -595,22 +562,7 @@ void render_sprite(int y, int x, int pattern_number, int attribs, int spr_nr)
 
 }
 
-void check_sprite_hit(int scanline)
-{
-
-    int i;
-
-    for (i = 0; i < width; i++)
-    {
-
-        if ((bgcache[i] [scanline - 1] > 0x00) && (sprcache[i][scanline - 1] > 0x00))
-            ppu_status |= 0x40;
-
-    }
-
-}
-
-void render_sprites()
+void ppu_rendersprites()
 {
 
     int i = 0;
@@ -618,17 +570,7 @@ void render_sprites()
     memset(sprcache, 0x00, sizeof (sprcache));
 
     for (i = 63; i >= 0; i--)
-        render_sprite(sprite_memory[i * 4], sprite_memory[i * 4 + 3], sprite_memory[i * 4 + 1], sprite_memory[i * 4 + 2], i);
-
-}
-
-void update_screen()
-{
-
-    int nescolor = ppu_memory[0x3f00];
-
-    SDL_Flip(screen);
-    SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, palette[nescolor].r, palette[nescolor].g, palette[nescolor].b));
+        ppu_rendersprite(sprite_memory[i * 4], sprite_memory[i * 4 + 3], sprite_memory[i * 4 + 1], sprite_memory[i * 4 + 2], i);
 
 }
 

@@ -1,4 +1,4 @@
-void cnrom_switch_chr(int bank)
+static void cnrom_switchchr(int bank)
 {
 
     unsigned int address = 0x0000;
@@ -14,7 +14,7 @@ void cnrom_access(unsigned int address, unsigned char data)
 {
 
     if (address > 0x7fff && address < 0x10000)
-        cnrom_switch_chr(data & (CHR - 1));
+        cnrom_switchchr(data & (CHR - 1));
 
 }
 

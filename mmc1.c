@@ -10,7 +10,7 @@ int mmc1_reg1_bitcount = 0;
 int mmc1_reg2_bitcount = 0;
 int mmc1_reg3_bitcount = 0;
 
-void mmc1_switch_prg(int bank, int pagesize, int area)
+static void mmc1_switchprg(int bank, int pagesize, int area)
 {
 
     int prg_size;
@@ -23,7 +23,7 @@ void mmc1_switch_prg(int bank, int pagesize, int area)
         address = 0x8000;
 
     }
-    
+
     else if (pagesize == 1)
     {
 
@@ -35,7 +35,7 @@ void mmc1_switch_prg(int bank, int pagesize, int area)
             address = 0xc000;
 
         }
-        
+
         else if (area == 1)
         {
 
@@ -46,26 +46,24 @@ void mmc1_switch_prg(int bank, int pagesize, int area)
         else
         {
 
-            fprintf(stdout,"[!] error prg area selection incorrect!\n");
             exit(1);
 
         }
 
     }
-    
+
     else
     {
 
-        fprintf(stdout,"[!] error prg pagesize incorrect!\n");
         exit(1);
 
     }
 
-    memcpy(memory + address, romcache + 16 + (bank * prg_size), prg_size); 
+    memcpy(memory + address, romcache + 16 + (bank * prg_size), prg_size);
 
 }
 
-void mmc1_switch_chr(int bank, int pagesize, int area)
+static void mmc1_switchchr(int bank, int pagesize, int area)
 {
 
     int prg_size = 16384;
@@ -80,7 +78,7 @@ void mmc1_switch_chr(int bank, int pagesize, int area)
         address = 0x0000;
 
     }
-    
+
     else if (pagesize == 1)
     {
 
@@ -92,28 +90,26 @@ void mmc1_switch_chr(int bank, int pagesize, int area)
             address = 0x0000;
 
         }
-        
+
         else if (area == 1)
         {
 
             address = 0x1000;
 
         }
-        
+
         else
         {
 
-            fprintf(stdout,"[!] error chr area selection incorrect!\n");
             exit(1);
 
         }
 
     }
-    
+
     else
     {
 
-        fprintf(stdout,"[!] error chr pages incorrect!\n");
         exit(1);
 
     }
@@ -135,7 +131,7 @@ void mmc1_access(unsigned int address,unsigned char data)
             mmc1_reg0_bitcount = 0;
 
         }
-        
+
         else
         {
 
@@ -189,7 +185,7 @@ void mmc1_access(unsigned int address,unsigned char data)
             mmc1_reg1_bitcount = 0;
 
         }
-        
+
         else
         {
 
@@ -202,7 +198,7 @@ void mmc1_access(unsigned int address,unsigned char data)
         {
 
             if (mmc1_reg1_data != 0x00)
-                mmc1_switch_chr(mmc1_reg1_data >> 1, mmc1_CHRROM_bank_switch, 0);
+                mmc1_switchchr(mmc1_reg1_data >> 1, mmc1_CHRROM_bank_switch, 0);
 
             mmc1_reg1_data = 0;
             mmc1_reg1_bitcount = 0;
@@ -221,7 +217,7 @@ void mmc1_access(unsigned int address,unsigned char data)
             mmc1_reg2_bitcount = 0;
 
         }
-        
+
         else
         {
 
@@ -234,7 +230,7 @@ void mmc1_access(unsigned int address,unsigned char data)
         {
 
             if (mmc1_reg2_data != 0x00)
-                mmc1_switch_chr(mmc1_reg2_data >> 1, mmc1_CHRROM_bank_switch, 1);
+                mmc1_switchchr(mmc1_reg2_data >> 1, mmc1_CHRROM_bank_switch, 1);
 
             mmc1_reg2_data = 0;
             mmc1_reg2_bitcount = 0;
@@ -253,7 +249,7 @@ void mmc1_access(unsigned int address,unsigned char data)
             mmc1_reg3_bitcount = 0;
 
         }
-        
+
         else
         {
 
@@ -265,7 +261,7 @@ void mmc1_access(unsigned int address,unsigned char data)
         if (mmc1_reg3_bitcount == 5)
         {
 
-            mmc1_switch_prg(mmc1_reg3_data >> 1, mmc1_PRGROM_bank_switch, mmc1_PRGROM_area_switch);
+            mmc1_switchprg(mmc1_reg3_data >> 1, mmc1_PRGROM_bank_switch, mmc1_PRGROM_area_switch);
 
             mmc1_reg3_data = 0;
             mmc1_reg3_bitcount = 0;

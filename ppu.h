@@ -13,12 +13,10 @@
 #define sprite_zero		                (ppu_status & 0x40)
 #define vblank_on                       (ppu_status & 0x80)
 
-extern void show_gfxcache();
-extern void write_ppu_memory(unsigned int address,unsigned char data);
-extern void render_background(int scanline);
-extern void render_sprites();
-extern void check_sprite_hit(int scanline);
-extern void update_screen();
+extern void ppu_memwrite(unsigned int address,unsigned char data);
+extern void ppu_checkspritehit(int scanline);
+extern void ppu_renderbackground(int scanline);
+extern void ppu_rendersprites();
 extern unsigned int ppu_control1;
 extern unsigned int ppu_control2;
 extern unsigned int ppu_addr;
@@ -27,7 +25,6 @@ extern unsigned int ppu_addr_tmp;
 extern unsigned int ppu_status;
 extern unsigned int ppu_status_tmp;
 extern unsigned int ppu_bgscr_f;
-extern int current_scanline;
 extern unsigned int loopyT;
 extern unsigned int loopyV;
 extern unsigned int loopyX;

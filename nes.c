@@ -1,15 +1,10 @@
-#include <sys/types.h>
-#include <ctype.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <SDL/SDL.h>
 #include "nes.h"
 #include "cpu.h"
 #include "ppu.h"
 #include "rom.h"
-#include "input.h"
 #include "sdl.h"
 
 #include "mmc1.c"
@@ -17,10 +12,9 @@
 #include "cnrom.c"
 #include "mmc3.c"
 
-char romfn[256];
+static char *romfn;
 unsigned char *romcache;
 unsigned char *ppu_memory;
-int pad1_readcount = 0;
 int start_int;
 int vblank_int;
 int vblank_cycle_timeout;
@@ -30,33 +24,36 @@ int height;
 int width;
 int sdl_screen_height;
 int sdl_screen_width;
-char *savfile = "game.sav";
 long romlen;
-FILE *sav_fp;
 
-static void read_sav()
+static int pad1_state[8];
+static int pad1_readcount = 0;
+
+void set_input(int pad_key)
 {
 
-    sav_fp = fopen(savfile, "rb");
-
-    if (sav_fp)
-    {
-
-        fseek(sav_fp, 0, SEEK_SET);
-        fread(&memory[0x6000], 1, 8192, sav_fp);
-        fclose(sav_fp);
-
-    }
+    pad1_state[pad_key] = 0x01;
 
 }
 
-static void write_sav()
+void clear_input(int pad_key)
 {
 
-    sav_fp = fopen(savfile, "wb");
+    pad1_state[pad_key] = 0x40;
 
-    fwrite(&memory[0x6000], 1, 8192, sav_fp);
-    fclose(sav_fp);
+}
+
+void reset_input()
+{
+
+    clear_input(0);
+    clear_input(1);
+    clear_input(2);
+    clear_input(3);
+    clear_input(4);
+    clear_input(5);
+    clear_input(6);
+    clear_input(7);
 
 }
 
@@ -106,53 +103,23 @@ unsigned char memory_read(unsigned int address)
     if (address == 0x4016)
     {
 
+        memory[address] = pad1_state[pad1_readcount];
+
         switch (pad1_readcount)
         {
 
         case 0:
-            memory[address] = pad1_A;
-            pad1_readcount++;
-
-            break;
-
         case 1:
-            memory[address] = pad1_B;
-            pad1_readcount++;
-
-            break;
-
         case 2:
-            memory[address] = pad1_SELECT;
-            pad1_readcount++;
-
-            break;
-
         case 3:
-            memory[address] = pad1_START;
-            pad1_readcount++;
-
-            break;
-
         case 4:
-            memory[address] = pad1_UP;
-            pad1_readcount++;
-
-            break;
-
         case 5:
-            memory[address] = pad1_DOWN;
-            pad1_readcount++;
-
-            break;
-
         case 6:
-            memory[address] = pad1_LEFT;
             pad1_readcount++;
 
             break;
 
         case 7:
-            memory[address] = pad1_RIGHT;
             pad1_readcount = 0;
 
             break;
@@ -188,7 +155,7 @@ void write_memory(unsigned int address,unsigned char data)
     if (address > 0x1fff && address < 0x4000)
     {
 
-        write_ppu_memory(address,data);
+        ppu_memwrite(address, data);
 
         return;
 
@@ -197,7 +164,7 @@ void write_memory(unsigned int address,unsigned char data)
     if (address == 0x4014)
     {
 
-        write_ppu_memory(address,data);
+        ppu_memwrite(address, data);
 
         return;
 
@@ -234,7 +201,7 @@ void write_memory(unsigned int address,unsigned char data)
     {
 
         if (SRAM == 1)
-            write_sav();
+            video_writesavefile("game.sav");
 
         memory[address] = data;
 
@@ -315,20 +282,20 @@ static void start_emulation()
 
         counter += cpu_execute(vblank_cycle_timeout);
         ppu_status &= 0x3F;
-    
+
         write_memory(0x2002,ppu_status);
 
         loopyV = loopyT;
 
-        screen_lock();
+        video_lock();
 
         for (scanline = 0; scanline < 240; scanline++)
         {
 
             if (!sprite_zero)
-                check_sprite_hit(scanline);
+                ppu_checkspritehit(scanline);
 
-            render_background(scanline);
+            ppu_renderbackground(scanline);
 
             counter += cpu_execute(scanline_refresh);
 
@@ -347,45 +314,12 @@ static void start_emulation()
 
         }
 
-        render_sprites();
-        screen_unlock();
-        update_screen();
-        check_SDL_event();
+        ppu_rendersprites();
+        video_unlock();
+        video_clear();
+        video_event();
 
     }
-
-}
-
-void reset_emulation()
-{
-
-    if (load_rom(romfn) == 1)
-    {
-
-        free(ppu_memory);
-        free(memory);
-        free(romcache);
-
-        exit(1);
-
-    }
-
-    if (MAPPER == 4)
-        mmc3_reset();
-
-    cpu_reset();
-    reset_input();
-    start_emulation();
-
-}
-
-void quit_emulation()
-{
-
-    free(ppu_memory);
-    free(memory);
-    free(romcache);
-    exit(0);
 
 }
 
@@ -411,14 +345,12 @@ int main(int argc, char **argv)
         if (i == 0)
         {
 
-            /* do nothing */
-
         }
-        
+
         else if (i == argc - 1)
         {
 
-            snprintf(romfn, sizeof(romfn), "%s", argv[i]);
+            romfn = argv[i];
 
         }
 
@@ -452,21 +384,14 @@ int main(int argc, char **argv)
         mmc3_reset();
 
     if (SRAM == 1)
-        read_sav();
+        video_readsavefile("game.sav");
 
     height = 240;
     width = 256;
     sdl_screen_height = height;
     sdl_screen_width = width;
 
-    printf("[*] PAL_SPEED: %d\n",PAL_SPEED);
-    printf("[*] PAL_VBLANK_INT: %d\n",PAL_VBLANK_INT);
-    printf("[*] PAL_SCANLINE_REFRESH: %d\n",PAL_SCANLINE_REFRESH);
-    printf("[*] PAL_VBLANK_CYCLE_TIMEOUT: %d\n",PAL_VBLANK_CYCLE_TIMEOUT);
-    printf("[*] height * PAL_SCANLINE_REFRESH: %d\n",(height * PAL_SCANLINE_REFRESH) + PAL_VBLANK_CYCLE_TIMEOUT + 341);
-
-    init_SDL(0);
-
+    video_init();
     cpu_reset();
     reset_input();
 
@@ -476,6 +401,9 @@ int main(int argc, char **argv)
     scanline_refresh = PAL_SCANLINE_REFRESH;
 
     start_emulation();
+    free(ppu_memory);
+    free(memory);
+    free(romcache);
 
     return 0;
 

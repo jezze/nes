@@ -1,5 +1,5 @@
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include "nes.h"
 #include "cpu.h"
@@ -24,13 +24,7 @@ int analyze_header(char *romfn)
     int i;
 
     if (!romfp)
-    {
-
-        printf("[!] error loading rom: %s\n", romfn);
-
         return 1;
-
-    }
 
     fseek(romfp, 0, 2);
 
@@ -41,13 +35,7 @@ int analyze_header(char *romfn)
     fclose(romfp);
 
     if ((header[0] != 'N') || (header[1] != 'E') || (header[2] != 'S') || (header[3] != 0x1A))
-    {
-
-        printf("[!] incorrect rom header\n");
-
         return 1;
-
-    }
 
     for (i = 8; i < 15; i++)
     {
@@ -55,28 +43,14 @@ int analyze_header(char *romfn)
         if ((header[i] != 0x00) && (header[i] != 0xFF))
         {
 
-            printf("[!] notice rom header 8-15 is not empty\n");
-
         }
 
     }
-
-    printf("[*] detected rom size: %ldkb\n",romlen / 1024);
-    printf("[*] %d x 16kb pages (PRG 0x%x) found!\n", header[4], header[4]);
 
     PRG = header[4];
 
     if (header[5] == 0x00)
     {
-
-        printf("[*] no CHR (CHR 0x00) found (imbedded)!\n");
-
-    }
-    
-    else
-    {
-
-        printf("[*] %d x 8kb pages (CHR 0x%x) found!\n", header[5], header[5]);
 
     }
 
@@ -96,16 +70,10 @@ int analyze_header(char *romfn)
 int load_rom(char *romfn)
 {
 
-    FILE *romfp = fopen(romfn,"rb");
+    FILE *romfp = fopen(romfn, "rb");
 
     if (!romfp)
-    {
-
-        fprintf(stdout,"[!] error loading %s\n", romfn);
-
         return 1;
-
-    }
 
     fread(&romcache[0x0000],1, romlen, romfp);
     fclose(romfp);
@@ -117,7 +85,7 @@ int load_rom(char *romfn)
         memcpy(memory + 0xC000, romcache + 16, 16384);
 
     }
-    
+
     else
     {
 

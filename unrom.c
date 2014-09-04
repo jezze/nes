@@ -1,4 +1,4 @@
-void unrom_switch_prg(int bank)
+static void unrom_switchprg(int bank)
 {
 
     int prg_size = 16384;
@@ -8,11 +8,11 @@ void unrom_switch_prg(int bank)
 
 }
 
-void unrom_access(unsigned int address,unsigned char data)
+void unrom_access(unsigned int address, unsigned char data)
 {
 
     if (address > 0x7fff && address < 0x10000)
-        unrom_switch_prg(data);
+        unrom_switchprg(data);
 
 }
 

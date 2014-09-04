@@ -1,9 +1,5 @@
-#include <sys/types.h>
-#include <ctype.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "instructions.h"
 #include "nes.h"
 
@@ -55,6 +51,7 @@ int cpu_nmi(int cycles)
     PUSH_ST((program_counter & 0xff00) >> 8);
     PUSH_ST(program_counter & 0xff);
     PUSH_ST(GET_SR());
+
     break_flag = 0;
     interrupt_flag = 1;
     program_counter = (memory[0xfffb] << 8) | memory[0xfffa];
@@ -249,8 +246,6 @@ int cpu_execute(int cycles)
         case 0x9A: TRANSFER_STACK_TO(x_reg,2);
         case 0x98: TRANSFER_REG(y_reg,accumulator,2);
         default:
-            printf("[%d]: error -> unrecognized instruction at offset 0x%x! opcode -> [%x]\n",1, program_counter, opcode);
-
             break;
 
         }
