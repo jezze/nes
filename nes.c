@@ -261,9 +261,14 @@ static void run(int start_int, int vblank_int, int vblank_timeout, int scanline_
 
     int counter = 0;
     int scanline = 0;
+    unsigned int currenttime;
+    unsigned int starttime;
+    int deltatime;
 
     while (running)
     {
+
+        starttime = backend_getticks();
 
         cpu_execute(start_int, memory);
 
@@ -310,9 +315,15 @@ static void run(int start_int, int vblank_int, int vblank_timeout, int scanline_
         }
 
         ppu_rendersprites();
-        backend_delay(8);
         backend_unlock();
         backend_update();
+
+        currenttime = backend_getticks();
+        deltatime = 20 - (currenttime - starttime);
+
+        if (deltatime > 0)
+            backend_delay(deltatime);
+
         backend_event();
 
     }

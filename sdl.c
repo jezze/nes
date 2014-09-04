@@ -214,6 +214,13 @@ void backend_event()
 
 }
 
+unsigned int backend_getticks()
+{
+
+    return SDL_GetTicks();
+
+}
+
 void backend_delay(unsigned int ms)
 {
 
