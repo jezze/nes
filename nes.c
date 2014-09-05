@@ -310,6 +310,7 @@ static void run(int start_int, int vblank_int, int vblank_timeout, int scanline_
         }
 
         ppu_rendersprites();
+        backend_delay(6);
         backend_unlock();
         backend_clear(ppu_memory[0x3f00]);
         backend_event();

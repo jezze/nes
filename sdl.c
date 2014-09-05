@@ -215,6 +215,13 @@ void backend_event()
 
 }
 
+void backend_delay(unsigned int ms)
+{
+
+    SDL_Delay(ms);
+
+}
+
 void backend_readsavefile(char *name, unsigned char *memory)
 {
 
