@@ -14,7 +14,7 @@
 
 #define ADC_ZP(CYCLES) \
 { \
-    addr = memory_read(memory[program_counter]); \
+    addr = ram_read(memory[program_counter]); \
     tmp = accumulator + addr + (carry_flag ? 1 : 0); \
     overflow_flag = (~(accumulator ^ addr)) & (accumulator ^ addr) & 0x80; \
     carry_flag = tmp > 0xFF; \
@@ -28,7 +28,7 @@
 
 #define ADC_ZPIX(CYCLES) \
 { \
-    addr = memory_read(memory[program_counter] + x_reg); \
+    addr = ram_read(memory[program_counter] + x_reg); \
     tmp = accumulator + addr + (carry_flag ? 1 : 0); \
     overflow_flag = (~(accumulator ^ addr)) & (accumulator ^ addr) & 0x80; \
     carry_flag = tmp > 0xFF; \
@@ -42,7 +42,7 @@
 
 #define ADC_A(CYCLES) \
 { \
-    addr = memory_read((memory[program_counter + 1] << 8) | memory[program_counter]); \
+    addr = ram_read((memory[program_counter + 1] << 8) | memory[program_counter]); \
     tmp = accumulator + addr + (carry_flag ? 1 : 0); \
     overflow_flag = (~(accumulator ^ addr)) & (accumulator ^ addr) & 0x80; \
     carry_flag = tmp > 0xFF; \
@@ -56,7 +56,7 @@
 
 #define ADC_AIX(CYCLES) \
 { \
-    addr = memory_read(((memory[program_counter + 1] << 8) | memory[program_counter]) + x_reg); \
+    addr = ram_read(((memory[program_counter + 1] << 8) | memory[program_counter]) + x_reg); \
     tmp = accumulator + addr + (carry_flag ? 1 : 0); \
     overflow_flag = (~(accumulator ^ addr)) & (accumulator ^ addr) & 0x80; \
     carry_flag = tmp > 0xFF; \
@@ -70,7 +70,7 @@
 
 #define ADC_AIY(CYCLES) \
 { \
-    addr = memory_read(((memory[program_counter + 1] << 8) | memory[program_counter]) + y_reg); \
+    addr = ram_read(((memory[program_counter + 1] << 8) | memory[program_counter]) + y_reg); \
     tmp = accumulator + addr + (carry_flag ? 1 : 0); \
     overflow_flag = (~(accumulator ^ addr)) & (accumulator ^ addr) & 0x80; \
     carry_flag = tmp > 0xFF; \
@@ -84,9 +84,9 @@
 
 #define ADC_IDI(CYCLES) \
 { \
-    addr = memory_read(memory[program_counter] + x_reg); \
+    addr = ram_read(memory[program_counter] + x_reg); \
     tmp = (memory[addr + 1] << 8) | memory[addr]; \
-    tmp2 = memory_read(tmp); \
+    tmp2 = ram_read(tmp); \
     tmp3 = accumulator + tmp2 + (carry_flag ? 1 : 0); \
     overflow_flag = (~(accumulator ^ tmp2)) & (accumulator ^ tmp2) & 0x80; \
     carry_flag = tmp3 > 0xFF; \
@@ -102,7 +102,7 @@
 { \
     addr = memory[program_counter]; \
     tmp = ((memory[addr + 1] << 8) | memory[addr]) + y_reg; \
-    tmp2 = memory_read(tmp); \
+    tmp2 = ram_read(tmp); \
     tmp3 = accumulator + tmp2 + (carry_flag ? 1 : 0); \
     overflow_flag = (~(accumulator ^ tmp2)) & (accumulator ^ tmp2) & 0x80; \
     carry_flag = tmp3 > 0xFF; \
@@ -127,7 +127,7 @@
 #define AND_ZP(CYCLES) \
 { \
     addr = memory[program_counter]; \
-    accumulator &= memory_read(addr); \
+    accumulator &= ram_read(addr); \
     program_counter++; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -138,7 +138,7 @@
 #define AND_ZPIX(CYCLES) \
 { \
     addr = memory[program_counter] + x_reg; \
-    accumulator &= memory_read(addr); \
+    accumulator &= ram_read(addr); \
     program_counter++; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -149,7 +149,7 @@
 #define AND_A(CYCLES) \
 { \
     addr = (memory[program_counter + 1] << 8) | memory[program_counter]; \
-    accumulator &= memory_read(addr); \
+    accumulator &= ram_read(addr); \
     program_counter += 2; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -161,7 +161,7 @@
 { \
     tmp = (memory[program_counter + 1] << 8) | memory[program_counter]; \
     addr = tmp + x_reg; \
-    accumulator &= memory_read(addr); \
+    accumulator &= ram_read(addr); \
     program_counter += 2; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -173,7 +173,7 @@
 { \
     tmp = (memory[program_counter + 1] << 8) | memory[program_counter]; \
     addr = tmp + y_reg; \
-    accumulator &= memory_read(addr); \
+    accumulator &= ram_read(addr); \
     program_counter += 2; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -185,7 +185,7 @@
 { \
     addr = memory[program_counter] + x_reg; \
     tmp = ((memory[addr + 1] << 8) | memory[addr]); \
-    accumulator &= memory_read(tmp); \
+    accumulator &= ram_read(tmp); \
     program_counter++; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -197,7 +197,7 @@
 { \
     addr = memory[program_counter]; \
     tmp = ((memory[addr + 1] << 8) | memory[addr]) + y_reg; \
-    accumulator &= memory_read(tmp); \
+    accumulator &= ram_read(tmp); \
     program_counter++; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -218,10 +218,10 @@
 #define ARITH_SL_ZP(CYCLES) \
 { \
     tmp = memory[program_counter]; \
-    addr = memory_read(tmp); \
+    addr = ram_read(tmp); \
     carry_flag = (carry_flag & 0xfe) | ((addr >> 7) & 0x01); \
     addr = addr << 1; \
-    write_memory(tmp,addr); \
+    ram_write(tmp,addr); \
     sign_flag = addr & 0x80; \
     zero_flag = !(addr); \
     program_counter++; \
@@ -232,10 +232,10 @@
 #define ARITH_SL_ZPIX(CYCLES) \
 { \
     tmp = memory[program_counter] + x_reg; \
-    addr = memory_read(tmp); \
+    addr = ram_read(tmp); \
     carry_flag = (carry_flag & 0xfe) | ((addr >> 7) & 0x01); \
     addr = addr << 1; \
-    write_memory(tmp,addr); \
+    ram_write(tmp,addr); \
     sign_flag = addr & 0x80; \
     zero_flag = !(addr); \
     program_counter++; \
@@ -246,10 +246,10 @@
 #define ARITH_SL_A(CYCLES) \
 { \
     tmp = (memory[program_counter + 1] << 8) | memory[program_counter]; \
-    addr = memory_read(tmp); \
+    addr = ram_read(tmp); \
     carry_flag = (carry_flag & 0xfe) | ((addr >> 7) & 0x01); \
     addr = addr << 1; \
-    write_memory(tmp,addr); \
+    ram_write(tmp,addr); \
     sign_flag = addr & 0x80; \
     zero_flag = !(addr); \
     program_counter += 2; \
@@ -260,10 +260,10 @@
 #define ARITH_SL_AIX(CYCLES) \
 { \
     tmp = ((memory[program_counter + 1] << 8) | memory[program_counter]) + x_reg; \
-    addr = memory_read(tmp); \
+    addr = ram_read(tmp); \
     carry_flag = (carry_flag & 0xfe) | ((addr >> 7) & 0x01); \
     addr = addr << 1; \
-    write_memory(tmp, addr); \
+    ram_write(tmp, addr); \
     sign_flag = addr & 0x80; \
     zero_flag = !(addr); \
     program_counter += 2; \
@@ -298,7 +298,7 @@
 #define BIT_TEST_ZP(CYCLES) \
 { \
     addr = memory[program_counter]; \
-    tmp = memory_read(addr); \
+    tmp = ram_read(addr); \
     tmp2 = tmp & accumulator; \
     sign_flag = tmp & 0x80; \
     overflow_flag = ((tmp & 0x40) != 0); \
@@ -311,7 +311,7 @@
 #define BIT_TEST_A(CYCLES) \
 { \
     addr = (memory[program_counter + 1] << 8) | memory[program_counter]; \
-    tmp = memory_read(addr); \
+    tmp = ram_read(addr); \
     tmp2 = tmp & accumulator; \
     sign_flag = tmp & 0x80; \
     overflow_flag = ((tmp & 0x40) != 0); \
@@ -416,7 +416,7 @@
 #define COMP_MEM_ZP(REG, CYCLES) \
 { \
     addr = memory[program_counter]; \
-    tmp = memory_read(addr); \
+    tmp = ram_read(addr); \
     carry_flag = (REG >= tmp) ? 1 : 0; \
     sign_flag = ((signed char)REG < (signed char)tmp) ? 1 : 0; \
     zero_flag = (REG == tmp) ? 1 : 0; \
@@ -428,7 +428,7 @@
 #define COMP_MEM_ZPIX(REG, CYCLES) \
 { \
     addr = memory[program_counter] + x_reg; \
-    tmp = memory_read(addr); \
+    tmp = ram_read(addr); \
     carry_flag = (REG >= tmp) ? 1 : 0; \
     sign_flag = ((signed char)REG < (signed char)tmp) ? 1 : 0; \
     zero_flag = (REG == tmp) ? 1 : 0; \
@@ -440,7 +440,7 @@
 #define COMP_MEM_A(REG, CYCLES) \
 { \
     addr = (memory[program_counter + 1] << 8) | memory[program_counter]; \
-    tmp = memory_read(addr); \
+    tmp = ram_read(addr); \
     carry_flag = (REG >= tmp) ? 1 : 0; \
     sign_flag = ((signed char)REG < (signed char)tmp) ? 1 : 0; \
     zero_flag = (REG == tmp) ? 1 : 0; \
@@ -452,7 +452,7 @@
 #define COMP_MEM_AIX(REG, CYCLES) \
 { \
     addr = ((memory[program_counter + 1] << 8) | memory[program_counter]) + x_reg; \
-    tmp = memory_read(addr); \
+    tmp = ram_read(addr); \
     carry_flag = (REG >= tmp) ? 1 : 0; \
     sign_flag = ((signed char)REG < (signed char)tmp) ? 1 : 0; \
     zero_flag = (REG == tmp) ? 1 : 0; \
@@ -464,7 +464,7 @@
 #define COMP_MEM_AIY(REG, CYCLES) \
 { \
     addr = ((memory[program_counter + 1] << 8) | memory[program_counter]) + y_reg; \
-    tmp = memory_read(addr); \
+    tmp = ram_read(addr); \
     carry_flag = (REG >= tmp) ? 1 : 0; \
     sign_flag = ((signed char)REG < (signed char)tmp) ? 1 : 0; \
     zero_flag = (REG == tmp) ? 1 : 0; \
@@ -500,8 +500,8 @@
 #define DECR_MEM_ZP(CYCLES) \
 { \
     addr = memory[program_counter]; \
-    tmp = memory_read(addr) - 1; \
-    write_memory(addr, tmp); \
+    tmp = ram_read(addr) - 1; \
+    ram_write(addr, tmp); \
     sign_flag = memory[addr] & 0x80; \
     zero_flag = !(memory[addr]); \
     program_counter++; \
@@ -512,8 +512,8 @@
 #define DECR_MEM_ZPIX(CYCLES) \
 { \
     addr = memory[program_counter] + x_reg; \
-    tmp = memory_read(addr) - 1; \
-    write_memory(addr, tmp); \
+    tmp = ram_read(addr) - 1; \
+    ram_write(addr, tmp); \
     sign_flag = memory[addr] & 0x80; \
     zero_flag = !(memory[addr]); \
     program_counter++; \
@@ -524,8 +524,8 @@
 #define DECR_MEM_A(CYCLES) \
 { \
     addr = (memory[program_counter + 1] << 8) | memory[program_counter]; \
-    tmp = memory_read(addr) - 1; \
-    write_memory(addr, tmp); \
+    tmp = ram_read(addr) - 1; \
+    ram_write(addr, tmp); \
     sign_flag = memory[addr] & 0x80; \
     zero_flag = !(memory[addr]); \
     cycle_count -= CYCLES; \
@@ -536,8 +536,8 @@
 #define DECR_MEM_AIX(CYCLES) \
 { \
     addr = ((memory[program_counter + 1] << 8) | memory[program_counter]) + x_reg; \
-    tmp = memory_read(addr) - 1; \
-    write_memory(addr, tmp); \
+    tmp = ram_read(addr) - 1; \
+    ram_write(addr, tmp); \
     sign_flag = memory[addr] & 0x80; \
     zero_flag = !(memory[addr]); \
     program_counter += 2; \
@@ -567,7 +567,7 @@
 #define EXCL_OR_MEM_ZP(CYCLES) \
 { \
     addr = memory[program_counter]; \
-    accumulator ^= memory_read(addr); \
+    accumulator ^= ram_read(addr); \
     program_counter++; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -578,7 +578,7 @@
 #define EXCL_OR_MEM_ZPIX(CYCLES) \
 { \
     addr = memory[program_counter] + x_reg; \
-    accumulator ^= memory_read(addr); \
+    accumulator ^= ram_read(addr); \
     program_counter++; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -589,7 +589,7 @@
 #define EXCL_OR_MEM_A(CYCLES) \
 { \
     addr = (memory[program_counter + 1] << 8) | memory[program_counter]; \
-    accumulator ^= memory_read(addr); \
+    accumulator ^= ram_read(addr); \
     program_counter += 2; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -600,7 +600,7 @@
 #define EXCL_OR_MEM_AIX(CYCLES) \
 { \
     addr = ((memory[program_counter + 1] << 8) | memory[program_counter]) + x_reg; \
-    accumulator ^= memory_read(addr); \
+    accumulator ^= ram_read(addr); \
     program_counter += 2; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -611,7 +611,7 @@
 #define EXCL_OR_MEM_AIY(CYCLES) \
 { \
     addr = ((memory[program_counter + 1] << 8) | memory[program_counter]) + y_reg; \
-    accumulator ^= memory_read(addr); \
+    accumulator ^= ram_read(addr); \
     program_counter += 2; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -623,7 +623,7 @@
 { \
     addr = memory[program_counter] + x_reg; \
     tmp = (memory[addr + 1] << 8) | memory[addr]; \
-    accumulator ^= memory_read(tmp); \
+    accumulator ^= ram_read(tmp); \
     program_counter++; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -635,7 +635,7 @@
 { \
     addr = memory[program_counter]; \
     tmp = ((memory[addr + 1] << 8) | memory[addr]) + y_reg; \
-    accumulator ^= memory_read(tmp); \
+    accumulator ^= ram_read(tmp); \
     program_counter++; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -646,8 +646,8 @@
 #define INCR_MEM_ZP(CYCLES) \
 { \
     addr = memory[program_counter]; \
-    tmp = memory_read(addr) + 1; \
-    write_memory(addr, tmp); \
+    tmp = ram_read(addr) + 1; \
+    ram_write(addr, tmp); \
     sign_flag = memory[addr] & 0x80; \
     zero_flag = !(memory[addr]); \
     program_counter++; \
@@ -658,8 +658,8 @@
 #define INCR_MEM_ZPIX(CYCLES) \
 { \
     addr = memory[program_counter] + x_reg; \
-    tmp = memory_read(addr) + 1; \
-    write_memory(addr, tmp); \
+    tmp = ram_read(addr) + 1; \
+    ram_write(addr, tmp); \
     sign_flag = memory[addr] & 0x80; \
     zero_flag = !(memory[addr]); \
     program_counter++; \
@@ -670,8 +670,8 @@
 #define INCR_MEM_A(CYCLES) \
 { \
     addr = (memory[program_counter + 1] << 8) | memory[program_counter]; \
-    tmp = memory_read(addr) + 1; \
-    write_memory(addr, tmp); \
+    tmp = ram_read(addr) + 1; \
+    ram_write(addr, tmp); \
     sign_flag = memory[addr] & 0x80; \
     zero_flag = !(memory[addr]); \
     program_counter += 2; \
@@ -682,8 +682,8 @@
 #define INCR_MEM_AIX(CYCLES) \
 { \
     addr = ((memory[program_counter + 1] << 8) | memory[program_counter]) + x_reg; \
-    tmp = memory_read(addr) + 1; \
-    write_memory(addr, tmp); \
+    tmp = ram_read(addr) + 1; \
+    ram_write(addr, tmp); \
     sign_flag = memory[addr] & 0x80; \
     zero_flag = !(memory[addr]); \
     program_counter += 2; \
@@ -710,9 +710,9 @@
 #define JMP_AI(CYCLES) \
 { \
     tmp = (memory[program_counter + 1] << 8) | memory[program_counter]; \
-    tmp2 = memory_read(tmp); \
+    tmp2 = ram_read(tmp); \
     tmp = ((memory[program_counter + 1] << 8) | memory[program_counter]) + 1; \
-    addr = memory_read(tmp); \
+    addr = ram_read(tmp); \
     program_counter = (addr << 8) | tmp2; \
     cycle_count -= CYCLES; \
     break; \
@@ -740,7 +740,7 @@
 #define LOAD_ZP(REG, CYCLES) \
 { \
     addr = memory[program_counter]; \
-    REG = memory_read(addr); \
+    REG = ram_read(addr); \
     program_counter++; \
     sign_flag = REG & 0x80; \
     zero_flag = !(REG); \
@@ -751,7 +751,7 @@
 #define LOAD_ZPIX(REG, CYCLES) \
 { \
     addr = memory[program_counter] + x_reg; \
-    REG = memory_read(addr); \
+    REG = ram_read(addr); \
     program_counter++; \
     sign_flag = REG & 0x80; \
     zero_flag = !(REG); \
@@ -762,7 +762,7 @@
 #define LOAD_ZPIY(REG, CYCLES) \
 { \
     addr = memory[program_counter] + y_reg; \
-    REG = memory_read(addr); \
+    REG = ram_read(addr); \
     program_counter++; \
     sign_flag = REG & 0x80; \
     zero_flag = !(REG); \
@@ -773,7 +773,7 @@
 #define LOAD_A(REG, CYCLES) \
 { \
     addr = (memory[program_counter + 1] << 8) | memory[program_counter]; \
-    REG = memory_read(addr); \
+    REG = ram_read(addr); \
     program_counter += 2; \
     sign_flag = REG & 0x80; \
     zero_flag = !(REG); \
@@ -784,7 +784,7 @@
 #define LOAD_AIX(REG, CYCLES) \
 { \
     addr = ((memory[program_counter + 1] << 8) | memory[program_counter]) + x_reg; \
-    REG = memory_read(addr); \
+    REG = ram_read(addr); \
     program_counter += 2; \
     sign_flag = REG & 0x80; \
     zero_flag = !(REG); \
@@ -795,7 +795,7 @@
 #define LOAD_AIY(REG, CYCLES) \
 { \
     addr = ((memory[program_counter + 1] << 8) | memory[program_counter]) + y_reg; \
-    REG = memory_read(addr); \
+    REG = ram_read(addr); \
     program_counter += 2; \
     sign_flag = REG & 0x80; \
     zero_flag = !(REG); \
@@ -807,7 +807,7 @@
 { \
     addr = memory[program_counter] + x_reg; \
     tmp = (memory[addr + 1] << 8) | memory[addr]; \
-    REG = memory_read(tmp); \
+    REG = ram_read(tmp); \
     program_counter++; \
     sign_flag = REG & 0x80; \
     zero_flag = !(REG); \
@@ -819,7 +819,7 @@
 { \
     addr = memory[program_counter]; \
     tmp = ((memory[addr + 1] << 8) | memory[addr]) + y_reg; \
-    REG = memory_read(tmp); \
+    REG = ram_read(tmp); \
     program_counter++; \
     sign_flag = REG & 0x80; \
     zero_flag = !(REG); \
@@ -840,10 +840,10 @@
 #define LOGIC_SHIFT_R_ZP(CYCLES) \
 { \
     addr = memory[program_counter]; \
-    tmp = memory_read(addr); \
+    tmp = ram_read(addr); \
     carry_flag = (carry_flag & 0xfe) | (tmp & 0x01); \
     tmp = tmp >> 1; \
-    write_memory(addr, tmp); \
+    ram_write(addr, tmp); \
     sign_flag = tmp & 0x80; \
     zero_flag = !(tmp); \
     program_counter++; \
@@ -854,10 +854,10 @@
 #define LOGIC_SHIFT_R_ZPIX(CYCLES) \
 { \
     addr = memory[program_counter] + x_reg; \
-    tmp = memory_read(addr); \
+    tmp = ram_read(addr); \
     carry_flag = (carry_flag & 0xfe) | (tmp & 0x01); \
     tmp = tmp >> 1; \
-    write_memory(addr, tmp); \
+    ram_write(addr, tmp); \
     sign_flag = tmp & 0x80; \
     zero_flag = !(tmp); \
     program_counter++; \
@@ -867,10 +867,10 @@
 #define LOGIC_SHIFT_R_A(CYCLES) \
 { \
     addr = (memory[program_counter + 1] << 8) | memory[program_counter]; \
-    tmp = memory_read(addr); \
+    tmp = ram_read(addr); \
     carry_flag = (carry_flag & 0xfe) | (tmp & 0x01); \
     tmp = tmp >> 1; \
-    write_memory(addr, tmp); \
+    ram_write(addr, tmp); \
     sign_flag = tmp & 0x80; \
     zero_flag = !(tmp); \
     program_counter += 2; \
@@ -880,10 +880,10 @@
 #define LOGIC_SHIFT_R_AIX(CYCLES) \
 { \
     addr = ((memory[program_counter + 1] << 8) | memory[program_counter]) + x_reg; \
-    tmp = memory_read(addr); \
+    tmp = ram_read(addr); \
     carry_flag = (carry_flag & 0xfe) | (tmp & 0x01); \
     tmp = tmp >> 1; \
-    write_memory(addr, tmp); \
+    ram_write(addr, tmp); \
     sign_flag = tmp & 0x80; \
     zero_flag = !(tmp); \
     program_counter += 2; \
@@ -910,7 +910,7 @@
 #define OR_MEM_ZP(CYCLES) \
 { \
     addr = memory[program_counter]; \
-    accumulator |= memory_read(addr); \
+    accumulator |= ram_read(addr); \
     program_counter++; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -921,7 +921,7 @@
 #define OR_MEM_ZPIX(CYCLES) \
 { \
     addr = memory[program_counter] + x_reg; \
-    accumulator |= memory_read(addr); \
+    accumulator |= ram_read(addr); \
     program_counter++; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -932,7 +932,7 @@
 #define OR_MEM_A(CYCLES) \
 { \
     addr = (memory[program_counter + 1] << 8) | memory[program_counter]; \
-    accumulator |= memory_read(addr); \
+    accumulator |= ram_read(addr); \
     program_counter += 2; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -943,7 +943,7 @@
 #define OR_MEM_AIX(CYCLES) \
 { \
     addr = ((memory[program_counter + 1] << 8) | memory[program_counter]) + x_reg; \
-    accumulator |= memory_read(addr); \
+    accumulator |= ram_read(addr); \
     program_counter += 2; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -954,7 +954,7 @@
 #define OR_MEM_AIY(CYCLES) \
 { \
     addr = ((memory[program_counter + 1] << 8) | memory[program_counter]) + y_reg; \
-    accumulator |= memory_read(addr); \
+    accumulator |= ram_read(addr); \
     program_counter += 2; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -966,7 +966,7 @@
 { \
     addr = memory[program_counter] + x_reg; \
     tmp = (memory[addr + 1] << 8) | memory[addr]; \
-    accumulator |= memory_read(tmp); \
+    accumulator |= ram_read(tmp); \
     program_counter++; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -978,7 +978,7 @@
 { \
     addr = memory[program_counter]; \
     tmp = ((memory[addr + 1] << 8) | memory[addr]) + y_reg; \
-    accumulator |= memory_read(tmp); \
+    accumulator |= ram_read(tmp); \
     program_counter++; \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
@@ -988,7 +988,7 @@
 
 #define PUSH_A(b, CYCLES) \
 { \
-    write_memory(stack_pointer + 0x100, (b)); \
+    ram_write(stack_pointer + 0x100, (b)); \
     stack_pointer--; \
     cycle_count -= CYCLES; \
     break; \
@@ -997,7 +997,7 @@
 #define PULL_A(b, CYCLES) \
 { \
     stack_pointer++; \
-    b = memory_read(stack_pointer + 0x100); \
+    b = ram_read(stack_pointer + 0x100); \
     sign_flag = b & 0x80; \
     zero_flag = !(b); \
     cycle_count -= CYCLES; \
@@ -1014,7 +1014,7 @@
 #define PULL_PS(CYCLES) \
 { \
     PULL_ST(); \
-    addr = memory_read(stack_pointer + 0x100); \
+    addr = ram_read(stack_pointer + 0x100); \
     SET_SR(addr); \
     cycle_count -= CYCLES; \
     break; \
@@ -1036,11 +1036,11 @@
 { \
     tmp = carry_flag; \
     tmp2 = memory[program_counter]; \
-    addr = memory_read(tmp2); \
+    addr = ram_read(tmp2); \
     carry_flag = (carry_flag & 0xfe) | ((addr >> 7) & 0x01); \
     addr = (addr << 1); \
     addr |= tmp; \
-    write_memory(tmp2, addr); \
+    ram_write(tmp2, addr); \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
     program_counter++; \
@@ -1052,11 +1052,11 @@
 { \
     tmp = carry_flag; \
     tmp2 = memory[program_counter] + x_reg; \
-    addr = memory_read(tmp2); \
+    addr = ram_read(tmp2); \
     carry_flag = (carry_flag & 0xfe) | ((addr >> 7) & 0x01); \
     addr = (addr << 1); \
     addr |= tmp; \
-    write_memory(tmp2, addr); \
+    ram_write(tmp2, addr); \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
     program_counter++; \
@@ -1068,11 +1068,11 @@
 { \
     tmp = carry_flag; \
     tmp2 = (memory[program_counter + 1] << 8) | memory[program_counter]; \
-    addr = memory_read(tmp2); \
+    addr = ram_read(tmp2); \
     carry_flag = (carry_flag & 0xfe) | ((addr >> 7) & 0x01); \
     addr = (addr << 1); \
     addr |= tmp; \
-    write_memory(tmp2, addr); \
+    ram_write(tmp2, addr); \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
     program_counter += 2; \
@@ -1084,11 +1084,11 @@
 { \
     tmp = carry_flag; \
     tmp2 = ((memory[program_counter + 1] << 8) | memory[program_counter]) + x_reg; \
-    addr = memory_read(tmp2); \
+    addr = ram_read(tmp2); \
     carry_flag = (carry_flag & 0xfe) | ((addr >> 7) & 0x01); \
     addr = (addr << 1); \
     addr |= tmp; \
-    write_memory(tmp2, addr); \
+    ram_write(tmp2, addr); \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
     program_counter += 2; \
@@ -1112,11 +1112,11 @@
 { \
     tmp = carry_flag; \
     tmp2 = memory[program_counter]; \
-    addr = memory_read(tmp2); \
+    addr = ram_read(tmp2); \
     carry_flag = (carry_flag & 0xfe) | (addr & 0x01); \
     addr = (addr >> 1); \
     if (tmp) addr |= 0x80; \
-    write_memory(tmp2, addr); \
+    ram_write(tmp2, addr); \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
     program_counter++; \
@@ -1128,11 +1128,11 @@
 { \
     tmp = carry_flag; \
     tmp2 = memory[program_counter] + x_reg; \
-    addr = memory_read(tmp2); \
+    addr = ram_read(tmp2); \
     carry_flag = (carry_flag & 0xfe) | (addr & 0x01); \
     addr = (addr >> 1); \
     if (tmp) addr |= 0x80; \
-    write_memory(tmp2, addr); \
+    ram_write(tmp2, addr); \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
     program_counter++; \
@@ -1144,11 +1144,11 @@
 { \
     tmp = carry_flag; \
     tmp2 = (memory[program_counter + 1] << 8) | memory[program_counter]; \
-    addr = memory_read(tmp2); \
+    addr = ram_read(tmp2); \
     carry_flag = (carry_flag & 0xfe) | (addr & 0x01); \
     addr = (addr >> 1); \
     if (tmp) addr |= 0x80; \
-    write_memory(tmp2, addr); \
+    ram_write(tmp2, addr); \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
     program_counter += 2; \
@@ -1160,11 +1160,11 @@
 { \
     tmp = carry_flag; \
     tmp2 = ((memory[program_counter + 1] << 8) | memory[program_counter]) + x_reg; \
-    addr = memory_read(tmp2); \
+    addr = ram_read(tmp2); \
     carry_flag = (carry_flag & 0xfe) | (addr & 0x01); \
     addr = (addr >> 1); \
     if (tmp) addr |= 0x80; \
-    write_memory(tmp2, addr); \
+    ram_write(tmp2, addr); \
     sign_flag = accumulator & 0x80; \
     zero_flag = !(accumulator); \
     program_counter += 2; \
@@ -1218,7 +1218,7 @@
 #define STORE_ZP(REG, CYCLES) \
 { \
     addr = memory[program_counter]; \
-    write_memory(addr, REG); \
+    ram_write(addr, REG); \
     program_counter++; \
     cycle_count -= CYCLES; \
     break; \
@@ -1227,7 +1227,7 @@
 #define STORE_ZPIX(REG, CYCLES) \
 { \
     addr = memory[program_counter] + x_reg; \
-    write_memory(addr, REG); \
+    ram_write(addr, REG); \
     program_counter++; \
     cycle_count -= CYCLES; \
     break; \
@@ -1236,7 +1236,7 @@
 #define STORE_ZPIY(REG, CYCLES) \
 { \
     addr = memory[program_counter] + y_reg; \
-    write_memory(addr, REG); \
+    ram_write(addr, REG); \
     program_counter++; \
     cycle_count -= CYCLES; \
     break; \
@@ -1245,7 +1245,7 @@
 #define STORE_A(REG, CYCLES) \
 { \
     addr = (memory[program_counter + 1] << 8) | memory[program_counter]; \
-    write_memory(addr, REG); \
+    ram_write(addr, REG); \
     program_counter += 2; \
     cycle_count -= CYCLES; \
     break; \
@@ -1254,7 +1254,7 @@
 #define STORE_AIX(REG, CYCLES) \
 { \
     addr = ((memory[program_counter + 1] << 8) | memory[program_counter]) + x_reg; \
-    write_memory(addr, REG); \
+    ram_write(addr, REG); \
     program_counter += 2; \
     cycle_count -= CYCLES; \
     break; \
@@ -1263,7 +1263,7 @@
 #define STORE_AIY(REG, CYCLES) \
 { \
     addr = ((memory[program_counter + 1] << 8) | memory[program_counter]) + y_reg; \
-    write_memory(addr, REG); \
+    ram_write(addr, REG); \
     program_counter += 2; \
     cycle_count -= CYCLES; \
     break; \
@@ -1273,7 +1273,7 @@
 { \
     addr = memory[program_counter] + x_reg; \
     tmp = (memory[addr + 1] << 8) | memory[addr]; \
-    write_memory(tmp, REG); \
+    ram_write(tmp, REG); \
     program_counter++; \
     cycle_count -= CYCLES; \
     break; \
@@ -1283,7 +1283,7 @@
 { \
     addr = memory[program_counter]; \
     tmp = ((memory[addr + 1] << 8) | memory[addr]) + y_reg; \
-    write_memory(tmp, REG); \
+    ram_write(tmp, REG); \
     program_counter++; \
     cycle_count -= CYCLES; \
     break; \
@@ -1305,7 +1305,7 @@
 
 #define SUB_ACC_ZP(CYCLES) \
 { \
-    addr = memory_read(memory[program_counter]); \
+    addr = ram_read(memory[program_counter]); \
     tmp = accumulator - addr - (carry_flag ? 0 : 1); \
     overflow_flag = (~(accumulator ^ addr)) & (accumulator ^ addr) & 0x80; \
     carry_flag = tmp <= 0xFF; \
@@ -1319,7 +1319,7 @@
 
 #define SUB_ACC_ZPIX(CYCLES) \
 { \
-    addr = memory_read(memory[program_counter] + x_reg); \
+    addr = ram_read(memory[program_counter] + x_reg); \
     tmp = accumulator - addr - (carry_flag ? 0 : 1); \
     overflow_flag = (~(accumulator ^ addr)) & (accumulator ^ addr) & 0x80; \
     carry_flag = tmp <= 0xFF; \
@@ -1333,7 +1333,7 @@
 
 #define SUB_ACC_A(CYCLES) \
 { \
-    addr = memory_read((memory[program_counter + 1] << 8) | memory[program_counter]); \
+    addr = ram_read((memory[program_counter + 1] << 8) | memory[program_counter]); \
     tmp = accumulator - addr - (carry_flag ? 0 : 1); \
     overflow_flag = (~(accumulator ^ addr)) & (accumulator ^ addr) & 0x80; \
     carry_flag = tmp <= 0xFF; \
@@ -1347,7 +1347,7 @@
 
 #define SUB_ACC_AIX(CYCLES) \
 { \
-    addr = memory_read(((memory[program_counter + 1] << 8) | memory[program_counter]) + x_reg); \
+    addr = ram_read(((memory[program_counter + 1] << 8) | memory[program_counter]) + x_reg); \
     tmp = accumulator - addr - (carry_flag ? 0 : 1); \
     overflow_flag = (~(accumulator ^ addr)) & (accumulator ^ addr) & 0x80; \
     carry_flag = tmp <= 0xFF; \
@@ -1361,7 +1361,7 @@
 
 #define SUB_ACC_AIY(CYCLES) \
 { \
-    addr = memory_read(((memory[program_counter + 1] << 8) | memory[program_counter]) + y_reg); \
+    addr = ram_read(((memory[program_counter + 1] << 8) | memory[program_counter]) + y_reg); \
     tmp = accumulator - addr - (carry_flag ? 0 : 1); \
     overflow_flag = (~(accumulator ^ addr)) & (accumulator ^ addr) & 0x80; \
     carry_flag = tmp <= 0xFF; \
@@ -1377,7 +1377,7 @@
 { \
     addr = memory[program_counter] + x_reg; \
     tmp = (memory[addr + 1] << 8) | memory[addr]; \
-    tmp2 = memory_read(tmp); \
+    tmp2 = ram_read(tmp); \
     tmp3 = accumulator - tmp2 - (carry_flag ? 0 : 1); \
     overflow_flag = (~(accumulator ^ tmp2)) & (accumulator ^ tmp2) & 0x80; \
     carry_flag = tmp3 <= 0xFF; \
@@ -1393,7 +1393,7 @@
 { \
     addr = memory[program_counter]; \
     tmp = ((memory[addr + 1] << 8) | memory[addr]) + y_reg; \
-    tmp2 = memory_read(tmp); \
+    tmp2 = ram_read(tmp); \
     tmp3 = accumulator - tmp2 - (carry_flag ? 0 : 1); \
     overflow_flag = (~(accumulator ^ tmp2)) & (accumulator ^ tmp2) & 0x80; \
     carry_flag = tmp3 <= 0xFF; \
@@ -1434,14 +1434,14 @@
 
 #define PUSH_ST(b) \
 { \
-    write_memory(stack_pointer + 0x100, (b)); \
+    ram_write(stack_pointer + 0x100, (b)); \
     stack_pointer--; \
 } \
 
 #define PULL_ST() \
 { \
     stack_pointer++; \
-    addr = memory_read(stack_pointer + 0x100); \
+    addr = ram_read(stack_pointer + 0x100); \
 } \
 
 #define GET_SR() \

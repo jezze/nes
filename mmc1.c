@@ -1,14 +1,14 @@
-int mmc1_PRGROM_area_switch;
-int mmc1_PRGROM_bank_switch;
-int mmc1_CHRROM_bank_switch;
-int mmc1_reg0_data = 0;
-int mmc1_reg1_data = 0;
-int mmc1_reg2_data = 0;
-int mmc1_reg3_data = 0;
-int mmc1_reg0_bitcount = 0;
-int mmc1_reg1_bitcount = 0;
-int mmc1_reg2_bitcount = 0;
-int mmc1_reg3_bitcount = 0;
+static int mmc1_PRGROM_area_switch;
+static int mmc1_PRGROM_bank_switch;
+static int mmc1_CHRROM_bank_switch;
+static int mmc1_reg0_data = 0;
+static int mmc1_reg1_data = 0;
+static int mmc1_reg2_data = 0;
+static int mmc1_reg3_data = 0;
+static int mmc1_reg0_bitcount = 0;
+static int mmc1_reg1_bitcount = 0;
+static int mmc1_reg2_bitcount = 0;
+static int mmc1_reg3_bitcount = 0;
 
 static void mmc1_switchprg(int bank, int pagesize, int area)
 {
@@ -118,7 +118,7 @@ static void mmc1_switchchr(int bank, int pagesize, int area)
 
 }
 
-void mmc1_access(unsigned int address,unsigned char data)
+static void mmc1_access(unsigned int address,unsigned char data)
 {
 
     if (address > 0x7fff && address < 0xa000)

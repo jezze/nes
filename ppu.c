@@ -1,30 +1,21 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include "nes.h"
-#include "cpu.h"
-#include "ppu.h"
-#include "rom.h"
-#include "sdl.h"
-
-unsigned char ppu_memory[16384];
-unsigned int ppu_control1 = 0x00;
-unsigned int ppu_control2 = 0x00;
-unsigned int ppu_addr_h = 0x00;
-unsigned int ppu_addr = 0x2000;
-unsigned int ppu_addr_tmp = 0x2000;
-unsigned int loopyT = 0x00;
-unsigned int loopyV = 0x00;
-unsigned int loopyX = 0x00;
-unsigned int ppu_status;
-unsigned int ppu_status_tmp = 0x00;
-unsigned int ppu_bgscr_f = 0x00;
+static unsigned char ppu_memory[16384];
+static unsigned int ppu_control1 = 0x00;
+static unsigned int ppu_control2 = 0x00;
+static unsigned int ppu_addr_h = 0x00;
+static unsigned int ppu_addr = 0x2000;
+static unsigned int ppu_addr_tmp = 0x2000;
+static unsigned int loopyT = 0x00;
+static unsigned int loopyV = 0x00;
+static unsigned int loopyX = 0x00;
+static unsigned int ppu_status;
+static unsigned int ppu_status_tmp = 0x00;
+static unsigned int ppu_bgscr_f = 0x00;
 static unsigned int sprite_address = 0x00;
 static unsigned char sprite_memory[256];
 static unsigned char bgcache[256 + 8][256 + 8];
 static unsigned char sprcache[256 + 8][256 + 8];
 
-void ppu_memwrite(unsigned int address, unsigned char data)
+static void ppu_memwrite(unsigned int address, unsigned char data)
 {
 
     int i;
@@ -208,7 +199,7 @@ void ppu_memwrite(unsigned int address, unsigned char data)
 
 }
 
-void ppu_checkspritehit(int width, int scanline)
+static void ppu_checkspritehit(int width, int scanline)
 {
 
     int i;
@@ -223,7 +214,7 @@ void ppu_checkspritehit(int width, int scanline)
 
 }
 
-void ppu_renderbackground(int scanline)
+static void ppu_renderbackground(int scanline)
 {
 
     int tile_count;
@@ -298,7 +289,7 @@ void ppu_renderbackground(int scanline)
             {
 
                 bgcache[ttc + i][scanline] = tile[loopyX + i];
-                video_drawpixel(ttc + i, scanline, ppu_memory[0x3f00 + (tile[loopyX + i])]);
+                backend_drawpixel(ttc + i, scanline, ppu_memory[0x3f00 + (tile[loopyX + i])]);
 
             }
 
@@ -311,7 +302,7 @@ void ppu_renderbackground(int scanline)
             {
 
                 bgcache[ttc + i - loopyX][scanline] = tile[i];
-                video_drawpixel(ttc + i - loopyX, scanline, ppu_memory[0x3f00 + (tile[i])]);
+                backend_drawpixel(ttc + i - loopyX, scanline, ppu_memory[0x3f00 + (tile[i])]);
 
             }
 
@@ -324,7 +315,7 @@ void ppu_renderbackground(int scanline)
             {
 
                 bgcache[ttc + i - loopyX][scanline] = tile[i];
-                video_drawpixel(ttc + i - loopyX, scanline, ppu_memory[0x3f00 + (tile[i])]);
+                backend_drawpixel(ttc + i - loopyX, scanline, ppu_memory[0x3f00 + (tile[i])]);
 
             }
 
@@ -527,7 +518,7 @@ static void ppu_rendersprite(int y, int x, int pattern_number, int attribs, int 
                 if (!disp_spr_back)
                 {
 
-                    video_drawpixel(x + i, y + j, ppu_memory[0x3f10 + (sprite[i][j])]);
+                    backend_drawpixel(x + i, y + j, ppu_memory[0x3f10 + (sprite[i][j])]);
 
                 }
 
@@ -535,7 +526,7 @@ static void ppu_rendersprite(int y, int x, int pattern_number, int attribs, int 
                 {
 
                     if (bgcache[x + i][y + j] == 0)
-                        video_drawpixel(x + i, y + j, ppu_memory[0x3f10 + (sprite[i][j])]);
+                        backend_drawpixel(x + i, y + j, ppu_memory[0x3f10 + (sprite[i][j])]);
 
                 }
 
@@ -547,7 +538,7 @@ static void ppu_rendersprite(int y, int x, int pattern_number, int attribs, int 
 
 }
 
-void ppu_rendersprites()
+static void ppu_rendersprites()
 {
 
     int i = 0;

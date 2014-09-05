@@ -3,7 +3,6 @@
 #include <string.h>
 #include "nes.h"
 #include "cpu.h"
-#include "ppu.h"
 #include "rom.h"
 
 unsigned char PRG;
@@ -16,7 +15,7 @@ int MIRRORING;
 static char title[128];
 static int TRAINER;
 
-int analyze_header(char *romfn)
+int rom_parse(char *romfn)
 {
 
     unsigned char header[15];
@@ -68,7 +67,7 @@ int analyze_header(char *romfn)
 
 }
 
-int load_rom(char *romfn)
+int rom_load(char *romfn, unsigned char *romcache, unsigned char *ram_mem, unsigned char *ppu_mem)
 {
 
     FILE *romfp = fopen(romfn, "rb");
@@ -76,29 +75,29 @@ int load_rom(char *romfn)
     if (!romfp)
         return 1;
 
-    fread(&romcache[0x0000],1, romlen, romfp);
+    fread(&romcache[0x0000], 1, romlen, romfp);
     fclose(romfp);
 
     if (PRG == 0x01)
     {
 
-        memcpy(memory + 0x8000, romcache + 16, 16384);
-        memcpy(memory + 0xC000, romcache + 16, 16384);
+        memcpy(ram_mem + 0x8000, romcache + 16, 16384);
+        memcpy(ram_mem + 0xC000, romcache + 16, 16384);
 
     }
 
     else
     {
 
-        memcpy(memory + 0x8000, romcache + 16, 16384);
-        memcpy(memory + 0xC000, romcache + 16 + ((PRG - 1) * 16384), 16384);
+        memcpy(ram_mem + 0x8000, romcache + 16, 16384);
+        memcpy(ram_mem + 0xC000, romcache + 16 + ((PRG - 1) * 16384), 16384);
 
     }
 
     if (CHR != 0x00)
     {
 
-        memcpy(ppu_memory, romcache + 16 + (PRG * 16384), 8192);
+        memcpy(ppu_mem, romcache + 16 + (PRG * 16384), 8192);
         memcpy(title, romcache + 16 + (PRG * 16384) + 8192, 128);
 
     }

@@ -1,13 +1,11 @@
-unsigned char mmc3_cmd;
-int mmc3_prg_bank0 = 0;
-int mmc3_prg_bank1 = 0;
-int mmc3_prg_page = 0;
-int mmc3_chr_xor = 0;
-int mmc3_irq_counter = 0;
-int mmc3_irq_latch;
-int mmc3_irq_control0;
-int mmc3_irq_control1;
-int mmc3_irq_enable = 0;
+static unsigned char mmc3_cmd;
+static int mmc3_prg_bank0 = 0;
+static int mmc3_prg_bank1 = 0;
+static int mmc3_prg_page = 0;
+static int mmc3_chr_xor = 0;
+static int mmc3_irq_counter = 0;
+static int mmc3_irq_latch;
+static int mmc3_irq_enable = 0;
 
 static void mmc3_switchprg(unsigned int address, int bank)
 {
@@ -29,14 +27,14 @@ static void mmc3_switchchr(unsigned int address, int bank, int pagecount)
 
 }
 
-void mmc3_reset()
+static void mmc3_reset()
 {
 
     memcpy(memory + 0xa000, romcache + 16, 8192);
 
 }
 
-void mmc3_access(unsigned int address, unsigned char data)
+static void mmc3_access(unsigned int address, unsigned char data)
 {
 
     switch (address)

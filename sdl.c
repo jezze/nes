@@ -33,7 +33,7 @@ static struct
     {0x99, 0xFF, 0xFC}, {0xDD, 0xDD, 0xDD}, {0x11, 0x11, 0x11}, {0x11, 0x11, 0x11}
 };
 
-void video_drawpixel(int x, int y, int nescolor)
+void backend_drawpixel(int x, int y, int nescolor)
 {
 
     if ((x >= screen->w) || (x < 0))
@@ -51,7 +51,7 @@ void video_drawpixel(int x, int y, int nescolor)
 
 }
 
-void video_clear(int nescolor)
+void backend_clear(int nescolor)
 {
 
     SDL_Flip(screen);
@@ -59,7 +59,7 @@ void video_clear(int nescolor)
 
 }
 
-void video_lock()
+void backend_lock()
 {
 
     if (SDL_MUSTLOCK(screen))
@@ -71,7 +71,7 @@ void video_lock()
 
 }
 
-void video_unlock()
+void backend_unlock()
 {
 
     if (SDL_MUSTLOCK(screen))
@@ -79,7 +79,7 @@ void video_unlock()
 
 }
 
-void video_init(int w, int h)
+void backend_init(int w, int h)
 {
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -94,7 +94,7 @@ void video_init(int w, int h)
 
 }
 
-void video_event()
+void backend_event()
 {
 
     while (SDL_PollEvent(&event))
@@ -107,42 +107,42 @@ void video_event()
             {
 
             case SDLK_x:
-                set_input(0);
+                input_set(0);
 
                 break;
 
             case SDLK_z:
-                set_input(1);
+                input_set(1);
 
                 break;
 
             case SDLK_LSHIFT:
-                set_input(2);
+                input_set(2);
 
                 break;
 
             case SDLK_LCTRL:
-                set_input(3);
+                input_set(3);
 
                 break;
 
             case SDLK_UP:
-                set_input(4);
+                input_set(4);
 
                 break;
 
             case SDLK_DOWN:
-                set_input(5);
+                input_set(5);
 
                 break;
 
             case SDLK_LEFT:
-                set_input(6);
+                input_set(6);
 
                 break;
 
             case SDLK_RIGHT:
-                set_input(7);
+                input_set(7);
 
                 break;
 
@@ -165,42 +165,42 @@ void video_event()
             {
 
             case SDLK_x:
-                clear_input(0);
+                input_clear(0);
 
                 break;
 
             case SDLK_z:
-                clear_input(1);
+                input_clear(1);
 
                 break;
 
             case SDLK_LSHIFT:
-                clear_input(2);
+                input_clear(2);
 
                 break;
 
             case SDLK_LCTRL:
-                clear_input(3);
+                input_clear(3);
 
                 break;
 
             case SDLK_UP:
-                clear_input(4);
+                input_clear(4);
 
                 break;
 
             case SDLK_DOWN:
-                clear_input(5);
+                input_clear(5);
 
                 break;
 
             case SDLK_LEFT:
-                clear_input(6);
+                input_clear(6);
 
                 break;
 
             case SDLK_RIGHT:
-                clear_input(7);
+                input_clear(7);
 
                 break;
 
@@ -215,7 +215,7 @@ void video_event()
 
 }
 
-void video_readsavefile(char *name)
+void backend_readsavefile(char *name, unsigned char *memory)
 {
 
     FILE *fp = fopen(name, "rb");
@@ -231,7 +231,7 @@ void video_readsavefile(char *name)
 
 }
 
-void video_writesavefile(char *name)
+void backend_writesavefile(char *name, unsigned char *memory)
 {
 
     FILE *fp = fopen(name, "wb");

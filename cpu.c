@@ -3,8 +3,6 @@
 #include "instructions.h"
 #include "nes.h"
 
-unsigned int tmp;
-
 static int zero_flag;
 static int sign_flag;
 static int overflow_flag;
@@ -14,7 +12,7 @@ static int interrupt_flag;
 static int carry_flag;
 static unsigned int addr;
 static unsigned int program_counter;
-static unsigned int tmp2, tmp3;
+static unsigned int tmp, tmp2, tmp3;
 static unsigned char accumulator;
 static unsigned char stack_pointer;
 static unsigned char status_register;
@@ -29,7 +27,7 @@ static void update_status_register()
 
 }
 
-int cpu_irq(int cycles)
+int cpu_irq(int cycles, unsigned char *memory)
 {
 
     PUSH_ST((program_counter & 0xff00) >> 8);
@@ -44,7 +42,7 @@ int cpu_irq(int cycles)
 
 }
 
-int cpu_nmi(int cycles)
+int cpu_nmi(int cycles, unsigned char *memory)
 {
 
     PUSH_ST((program_counter & 0xff00) >> 8);
@@ -59,7 +57,7 @@ int cpu_nmi(int cycles)
 
 }
 
-void cpu_reset(void)
+void cpu_reset(unsigned char *memory)
 {
 
     status_register = 0x20;
@@ -76,7 +74,7 @@ void cpu_reset(void)
 
 }
 
-int cpu_execute(int cycles)
+int cpu_execute(int cycles, unsigned char *memory)
 {
 
     unsigned char opcode;

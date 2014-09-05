@@ -8,7 +8,7 @@ static void unrom_switchprg(int bank)
 
 }
 
-void unrom_access(unsigned int address, unsigned char data)
+static void unrom_access(unsigned int address, unsigned char data)
 {
 
     if (address > 0x7fff && address < 0x10000)

@@ -3,19 +3,12 @@
 #include <string.h>
 #include "nes.h"
 #include "cpu.h"
-#include "ppu.h"
 #include "rom.h"
 #include "sdl.h"
 
-#include "mmc1.c"
-#include "unrom.c"
-#include "cnrom.c"
-#include "mmc3.c"
-
-unsigned char *romcache;
-unsigned char memory[65536];
 long romlen;
-
+static unsigned char *romcache;
+static unsigned char memory[65536];
 static int height;
 static int width;
 static int pad1_state[8];
@@ -23,35 +16,41 @@ static int pad1_readcount = 0;
 static int running = 1;
 static char *romfn;
 
-void set_input(int pad_key)
+#include "ppu.c"
+#include "mmc1.c"
+#include "unrom.c"
+#include "cnrom.c"
+#include "mmc3.c"
+
+void input_set(int key)
 {
 
-    pad1_state[pad_key] = 0x01;
+    pad1_state[key] = 0x01;
 
 }
 
-void clear_input(int pad_key)
+void input_clear(int key)
 {
 
-    pad1_state[pad_key] = 0x40;
+    pad1_state[key] = 0x40;
 
 }
 
-void reset_input()
+void input_reset()
 {
 
-    clear_input(0);
-    clear_input(1);
-    clear_input(2);
-    clear_input(3);
-    clear_input(4);
-    clear_input(5);
-    clear_input(6);
-    clear_input(7);
+    input_clear(0);
+    input_clear(1);
+    input_clear(2);
+    input_clear(3);
+    input_clear(4);
+    input_clear(5);
+    input_clear(6);
+    input_clear(7);
 
 }
 
-unsigned char memory_read(unsigned int address)
+unsigned char ram_read(unsigned int address)
 {
 
     if (address < 0x2000 || address > 0x7FFF)
@@ -62,9 +61,9 @@ unsigned char memory_read(unsigned int address)
 
         ppu_status_tmp = ppu_status;
         ppu_status &= 0x7F;
-        write_memory(0x2002, ppu_status);
+        ram_write(0x2002, ppu_status);
         ppu_status &= 0x1F;
-        write_memory(0x2002, ppu_status);
+        ram_write(0x2002, ppu_status);
         ppu_bgscr_f = 0x00;
         ppu_addr_h = 0x00;
 
@@ -75,7 +74,8 @@ unsigned char memory_read(unsigned int address)
     if (address == 0x2007)
     {
 
-        tmp = ppu_addr_tmp;
+        unsigned int old = ppu_addr_tmp;
+
         ppu_addr_tmp = ppu_addr;
 
         if (!increment_32)
@@ -83,7 +83,7 @@ unsigned char memory_read(unsigned int address)
         else
             ppu_addr += 0x20;
 
-        return ppu_memory[tmp];
+        return ppu_memory[old];
 
     }
 
@@ -135,7 +135,7 @@ unsigned char memory_read(unsigned int address)
 
 }
 
-void write_memory(unsigned int address,unsigned char data)
+void ram_write(unsigned int address,unsigned char data)
 {
 
     if (address == 0x2002)
@@ -196,7 +196,7 @@ void write_memory(unsigned int address,unsigned char data)
     {
 
         if (SRAM == 1)
-            video_writesavefile("game.sav");
+            backend_writesavefile("game.sav", memory);
 
         memory[address] = data;
 
@@ -256,7 +256,7 @@ void write_memory(unsigned int address,unsigned char data)
 
 }
 
-static void start_emulation(int start_int, int vblank_int, int vblank_timeout, int scanline_refresh)
+static void run(int start_int, int vblank_int, int vblank_timeout, int scanline_refresh)
 {
 
     int counter = 0;
@@ -265,24 +265,24 @@ static void start_emulation(int start_int, int vblank_int, int vblank_timeout, i
     while (running)
     {
 
-        cpu_execute(start_int);
+        cpu_execute(start_int, memory);
 
         ppu_status |= 0x80;
-        write_memory(0x2002, ppu_status);
+        ram_write(0x2002, ppu_status);
 
-        counter += cpu_execute(12);
+        counter += cpu_execute(12, memory);
 
         if (exec_nmi_on_vblank)
-            counter += cpu_nmi(counter);
+            counter += cpu_nmi(counter, memory);
 
-        counter += cpu_execute(vblank_timeout);
+        counter += cpu_execute(vblank_timeout, memory);
         ppu_status &= 0x3F;
 
-        write_memory(0x2002, ppu_status);
+        ram_write(0x2002, ppu_status);
 
         loopyV = loopyT;
 
-        video_lock();
+        backend_lock();
 
         for (scanline = 0; scanline < 240; scanline++)
         {
@@ -292,7 +292,7 @@ static void start_emulation(int start_int, int vblank_int, int vblank_timeout, i
 
             ppu_renderbackground(scanline);
 
-            counter += cpu_execute(scanline_refresh);
+            counter += cpu_execute(scanline_refresh, memory);
 
             if (mmc3_irq_enable == 1)
             {
@@ -300,7 +300,7 @@ static void start_emulation(int start_int, int vblank_int, int vblank_timeout, i
                 if (scanline == mmc3_irq_counter)
                 {
 
-                    cpu_irq(counter);
+                    cpu_irq(counter, memory);
                     mmc3_irq_counter--;
 
                 }
@@ -310,9 +310,9 @@ static void start_emulation(int start_int, int vblank_int, int vblank_timeout, i
         }
 
         ppu_rendersprites();
-        video_unlock();
-        video_clear(ppu_memory[0x3f00]);
-        video_event();
+        backend_unlock();
+        backend_clear(ppu_memory[0x3f00]);
+        backend_event();
 
     }
 
@@ -339,12 +339,12 @@ int main(int argc, char **argv)
 
     romfn = argv[1];
 
-    if (analyze_header(romfn) == 1)
+    if (rom_parse(romfn) == 1)
         return 1;
 
     romcache = (unsigned char *)malloc(romlen);
 
-    if (load_rom(romfn) == 1)
+    if (rom_load(romfn, romcache, memory, ppu_memory) == 1)
     {
 
         free(romcache);
@@ -357,16 +357,15 @@ int main(int argc, char **argv)
         mmc3_reset();
 
     if (SRAM == 1)
-        video_readsavefile("game.sav");
+        backend_readsavefile("game.sav", memory);
 
     height = 240;
     width = 256;
 
-    video_init(width, height);
-    cpu_reset();
-    reset_input();
-
-    start_emulation(pal_start_int, pal_vblank_int, pal_vblank_timeout, pal_scanline_refresh);
+    backend_init(width, height);
+    cpu_reset(memory);
+    input_reset();
+    run(pal_start_int, pal_vblank_int, pal_vblank_timeout, pal_scanline_refresh);
     free(romcache);
 
     return 0;

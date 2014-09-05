@@ -10,7 +10,7 @@ static void cnrom_switchchr(int bank)
 
 }
 
-void cnrom_access(unsigned int address, unsigned char data)
+static void cnrom_access(unsigned int address, unsigned char data)
 {
 
     if (address > 0x7fff && address < 0x10000)
