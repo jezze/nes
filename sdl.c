@@ -51,11 +51,10 @@ void backend_drawpixel(int x, int y, int nescolor)
 
 }
 
-void backend_clear(int nescolor)
+void backend_update()
 {
 
     SDL_Flip(screen);
-    SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, palette[nescolor].r, palette[nescolor].g, palette[nescolor].b));
 
 }
 
