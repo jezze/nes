@@ -56,7 +56,7 @@ unsigned char ram_read(unsigned int address)
     if (address < 0x2000 || address > 0x7FFF)
         return memory[address];
 
-    if (address == 0x2002 || address == 0x2007)
+    if ((address > 0x1fff && address < 0x4000) || address == 0x4014)
         return ppu_memread(address);
 
     if ((address > 0x3fff && address < 0x4014) || address == 0x4015 || address == 0x4017)
