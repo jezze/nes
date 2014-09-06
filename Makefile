@@ -1,8 +1,13 @@
+BIN = nes
 SRC = nes.c cpu.c rom.c sdl.c
-OBJ_FLAG = -O3 -fomit-frame-pointer -Wall -I/usr/local/include -L/usr/local/lib -L/usr/X11R6/lib -lSDL -pthread;
+OBJ = nes.o cpu.o rom.o sdl.o
+CFLAGS = -Wall -O2 -fomit-frame-pointer
 
-nes: $(SRC)
-	$(CC) -o $@ $(SRC) $(OBJ_FLAG)
+.c.o:
+	$(CC) -o $@ -c $(CFLAGS) $<
+
+$(BIN): $(OBJ)
+	$(CC) -o $@ $^ $(CFLAGS) -L/usr/X11R6/lib -lSDL -pthread
 
 clean: $(SRC)
-	rm -f nes
+	rm -f $(BIN) $(OBJ)
