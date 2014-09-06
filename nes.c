@@ -6,6 +6,8 @@
 #include "rom.h"
 #include "backend.h"
 
+struct nes_header header;
+unsigned char mapper;
 static unsigned char memory[65536];
 static int height;
 static int width;
@@ -150,7 +152,7 @@ void ram_write(unsigned int address, unsigned char data)
 
     }
 
-    if (MAPPER == 1)
+    if (mapper == 1)
     {
 
         mmc1_access(address, data);
@@ -159,7 +161,7 @@ void ram_write(unsigned int address, unsigned char data)
 
     }
 
-    if (MAPPER == 2)
+    if (mapper == 2)
     {
 
         unrom_access(address, data);
@@ -168,7 +170,7 @@ void ram_write(unsigned int address, unsigned char data)
 
     }
 
-    if (MAPPER == 3)
+    if (mapper == 3)
     {
 
         cnrom_access(address, data);
@@ -177,7 +179,7 @@ void ram_write(unsigned int address, unsigned char data)
 
     }
 
-    if (MAPPER == 4)
+    if (mapper == 4)
     {
 
         mmc3_access(address, data);
@@ -286,10 +288,12 @@ int main(int argc, char **argv)
 
     romfn = argv[1];
 
-    if (rom_load(romfn, memory, ppu_memory) == 1)
+    if (rom_load(romfn, &header, memory, ppu_memory) == 1)
         return 1;
 
-    if (MAPPER == 4)
+    mapper = (header.flags6 >> 4) | (header.flags7 & 0xF0);
+
+    if (mapper == 4)
         mmc3_reset();
 
     if (SRAM == 1)

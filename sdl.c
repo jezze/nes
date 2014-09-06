@@ -33,6 +33,42 @@ static struct
     {0x99, 0xFF, 0xFC}, {0xDD, 0xDD, 0xDD}, {0x11, 0x11, 0x11}, {0x11, 0x11, 0x11}
 };
 
+unsigned int backend_read(char *path, unsigned int offset, unsigned int count, void *buffer)
+{
+
+    FILE *fp = fopen(path, "rb");
+
+    if (!fp)
+        return 0;
+
+    fseek(fp, offset, SEEK_SET);
+
+    count = fread(buffer, count, 1, fp);
+
+    fclose(fp);
+
+    return count;
+
+}
+
+unsigned int backend_write(char *path, unsigned int offset, unsigned int count, void *buffer)
+{
+
+    FILE *fp = fopen(path, "rb");
+
+    if (!fp)
+        return 0;
+
+    fseek(fp, offset, SEEK_SET);
+
+    count = fwrite(buffer, count, 1, fp);
+
+    fclose(fp);
+
+    return count;
+
+}
+
 void backend_drawpixel(int x, int y, int nescolor)
 {
 
@@ -228,47 +264,17 @@ void backend_delay(unsigned int ms)
 
 }
 
-unsigned int backend_read(char *path, unsigned int offset, unsigned int count, void *buffer)
-{
-
-    FILE *fp = fopen(path, "rb");
-
-    if (!fp)
-        return 0;
-
-    fseek(fp, offset, SEEK_SET);
-
-    count = fread(buffer, count, 1, fp);
-
-    fclose(fp);
-
-    return count;
-
-}
-
 void backend_readsavefile(char *name, unsigned char *memory)
 {
 
-    FILE *fp = fopen(name, "rb");
-
-    if (fp)
-    {
-
-        fseek(fp, 0, SEEK_SET);
-        fread(&memory[0x6000], 1, 8192, fp);
-        fclose(fp);
-
-    }
+    backend_read(name, 0, 8192, memory + 0x6000);
 
 }
 
 void backend_writesavefile(char *name, unsigned char *memory)
 {
 
-    FILE *fp = fopen(name, "wb");
-
-    fwrite(&memory[0x6000], 1, 8192, fp);
-    fclose(fp);
+    backend_write(name, 0, 8192, memory + 0x6000);
 
 }
 
