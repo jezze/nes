@@ -209,11 +209,12 @@ static void run(int start_int, int vblank_int, int vblank_timeout, int scanline_
         cpu_execute(start_int, memory);
 
         ppu_status |= 0x80;
+
         ram_write(0x2002, ppu_status);
 
         counter += cpu_execute(12, memory);
 
-        if (exec_nmi_on_vblank)
+        if (PPUCTRL_VBLANKNMI)
             counter += cpu_nmi(counter, memory);
 
         counter += cpu_execute(vblank_timeout, memory);
@@ -228,7 +229,7 @@ static void run(int start_int, int vblank_int, int vblank_timeout, int scanline_
         for (scanline = 0; scanline < 240; scanline++)
         {
 
-            if (!sprite_zero)
+            if (!PPUSTATUS_SPRITE0HIT)
                 ppu_checkspritehit(width, scanline);
 
             ppu_renderbackground(scanline);
