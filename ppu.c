@@ -486,7 +486,7 @@ static void ppu_rendersprite(int y, int x, int pattern_number, int attribs, int 
     unsigned char bit2[8][16];
     unsigned char sprite[8][16];
 
-    sprite_pattern_table = (PPUCTRL_SPRITEHI) ? 0x1000 : 0x0000;
+    sprite_pattern_table = (!PPUCTRL_SPRITE16 && PPUCTRL_SPRITEHI) ? 0x1000 : 0x0000;
     sprite_start = sprite_pattern_table + ((pattern_number << 3) << 1);
     imax = 8;
     jmax = (PPUCTRL_SPRITE16) ? 16 : 8;
