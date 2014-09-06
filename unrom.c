@@ -1,10 +1,9 @@
 static void unrom_switchprg(int bank)
 {
 
-    int prg_size = 16384;
-    unsigned int address = 0x8000;
+    int size = 16384;
 
-    backend_read(romfn, 16 + (bank * prg_size), prg_size, memory + address);
+    backend_read(romfn, 16 + (bank * size), size, memory + 0x8000);
 
 }
 

@@ -10,20 +10,18 @@ static int mmc3_irq_enable = 0;
 static void mmc3_switchprg(unsigned int address, int bank)
 {
 
-    int prg_size = 8192;
+    int size = 8192;
 
-    backend_read(romfn, 16 + (bank * prg_size), prg_size, memory + address);
+    backend_read(romfn, 16 + (bank * size), size, memory + address);
 
 }
 
 static void mmc3_switchchr(unsigned int address, int bank, int pagecount)
 {
 
-    int prg_size = 16384;
-    int chr_size = 1024;
-    int chr_start = prg_size * PRG;
+    int size = 1024;
 
-    backend_read(romfn, 16 + chr_start + (bank * chr_size), chr_size * pagecount, ppu_memory + address);
+    backend_read(romfn, 16 + (16384 * PRG) + (bank * size), size * pagecount, ppu_memory + address);
 
 }
 

@@ -1,12 +1,9 @@
 static void cnrom_switchchr(int bank)
 {
 
-    unsigned int address = 0x0000;
-    int prg_size = 16384;
-    int chr_size = 8192;
-    int chr_start = prg_size * PRG;
+    int size = 8192;
 
-    backend_read(romfn, 16 + chr_start + (bank * chr_size), chr_size, ppu_memory + address);
+    backend_read(romfn, 16 + (16384 * PRG) + (bank * size), size, ppu_memory);
 
 }
 

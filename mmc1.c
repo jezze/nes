@@ -13,53 +13,10 @@ static int mmc1_reg3_bitcount = 0;
 static void mmc1_switchprg(int bank, int pagesize, int area)
 {
 
-    int prg_size;
-    unsigned int address;
+    unsigned int address = (pagesize == 1 && !area) ? 0xc000 : 0x8000;
+    int size = (pagesize == 1) ? 16384 : 32768;
 
-    if (pagesize == 0)
-    {
-
-        prg_size = 32768;
-        address = 0x8000;
-
-    }
-
-    else if (pagesize == 1)
-    {
-
-        prg_size = 16384;
-
-        if (area == 0)
-        {
-
-            address = 0xc000;
-
-        }
-
-        else if (area == 1)
-        {
-
-            address = 0x8000;
-
-        }
-
-        else
-        {
-
-            exit(1);
-
-        }
-
-    }
-
-    else
-    {
-
-        exit(1);
-
-    }
-
-    backend_read(romfn, 16 + (bank * prg_size), prg_size, memory + address);
+    backend_read(romfn, 16 + (bank * size), size, memory + address);
 
 }
 
