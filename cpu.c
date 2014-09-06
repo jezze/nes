@@ -18,7 +18,6 @@ static unsigned char stack_pointer;
 static unsigned char status_register;
 static unsigned char x_reg;
 static unsigned char y_reg;
-static int cycle_count;
 
 static void update_status_register()
 {
@@ -77,9 +76,8 @@ void cpu_reset(unsigned char *memory)
 int cpu_execute(int cycles, unsigned char *memory)
 {
 
+    int cycle_count = cycles;
     unsigned char opcode;
-
-    cycle_count = cycles;
 
     do
     {
