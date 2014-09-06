@@ -73,7 +73,7 @@ static unsigned char ppu_memread(unsigned int address)
 
     }
 
-    return 0;
+    return memory[address];
 
 }
 

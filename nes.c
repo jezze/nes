@@ -16,6 +16,7 @@ static int running = 1;
 static char *romfn;
 
 #include "ppu.c"
+#include "apu.c"
 #include "mmc1.c"
 #include "unrom.c"
 #include "cnrom.c"
@@ -55,11 +56,11 @@ unsigned char ram_read(unsigned int address)
     if (address < 0x2000 || address > 0x7FFF)
         return memory[address];
 
-    if (address == 0x2002)
+    if (address == 0x2002 || address == 0x2007)
         return ppu_memread(address);
 
-    if (address == 0x2007)
-        return ppu_memread(address);
+    if ((address > 0x3fff && address < 0x4014) || address == 0x4015 || address == 0x4017)
+        return apu_memread(address);
 
     if (address == 0x4016)
     {
@@ -82,7 +83,7 @@ unsigned char ram_read(unsigned int address)
 void ram_write(unsigned int address, unsigned char data)
 {
 
-    if (address > 0x1fff && address < 0x4000)
+    if ((address > 0x1fff && address < 0x4000) || address == 0x4014)
     {
 
         memory[address] = ppu_memwrite(address, data);
@@ -91,10 +92,10 @@ void ram_write(unsigned int address, unsigned char data)
 
     }
 
-    if (address == 0x4014)
+    if ((address > 0x3fff && address < 0x4014) || address == 0x4015 || address == 0x4017)
     {
 
-        memory[address] = ppu_memwrite(address, data);
+        memory[address] = apu_memwrite(address, data);
 
         return;
 
@@ -104,24 +105,6 @@ void ram_write(unsigned int address, unsigned char data)
     {
 
         memory[address] = 0x40;
-
-        return;
-
-    }
-
-    if (address == 0x4017)
-    {
-
-        memory[address] = 0x48;
-
-        return;
-
-    }
-
-    if (address > 0x3fff && address < 0x4016)
-    {
-
-        memory[address] = data;
 
         return;
 
