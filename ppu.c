@@ -304,7 +304,9 @@ static void ppu_renderbackground(int scanline)
             {
 
                 bgcache[ttc + i][scanline] = tile[loopyX + i];
-                backend_drawpixel(ttc + i, scanline, ppu_memory[0x3f00 + (tile[loopyX + i])]);
+
+                if (background_on)
+                    backend_drawpixel(ttc + i, scanline, ppu_memory[0x3f00 + (tile[loopyX + i])]);
 
             }
 
@@ -317,7 +319,9 @@ static void ppu_renderbackground(int scanline)
             {
 
                 bgcache[ttc + i - loopyX][scanline] = tile[i];
-                backend_drawpixel(ttc + i - loopyX, scanline, ppu_memory[0x3f00 + (tile[i])]);
+
+                if (background_on)
+                    backend_drawpixel(ttc + i - loopyX, scanline, ppu_memory[0x3f00 + (tile[i])]);
 
             }
 
@@ -330,7 +334,9 @@ static void ppu_renderbackground(int scanline)
             {
 
                 bgcache[ttc + i - loopyX][scanline] = tile[i];
-                backend_drawpixel(ttc + i - loopyX, scanline, ppu_memory[0x3f00 + (tile[i])]);
+
+                if (background_on)
+                    backend_drawpixel(ttc + i - loopyX, scanline, ppu_memory[0x3f00 + (tile[i])]);
 
             }
 
@@ -533,7 +539,8 @@ static void ppu_rendersprite(int y, int x, int pattern_number, int attribs, int 
                 if (!disp_spr_back)
                 {
 
-                    backend_drawpixel(x + i, y + j, ppu_memory[0x3f10 + (sprite[i][j])]);
+                    if (background_on)
+                        backend_drawpixel(x + i, y + j, ppu_memory[0x3f10 + (sprite[i][j])]);
 
                 }
 
@@ -541,7 +548,8 @@ static void ppu_rendersprite(int y, int x, int pattern_number, int attribs, int 
                 {
 
                     if (bgcache[x + i][y + j] == 0)
-                        backend_drawpixel(x + i, y + j, ppu_memory[0x3f10 + (sprite[i][j])]);
+                        if (background_on)
+                            backend_drawpixel(x + i, y + j, ppu_memory[0x3f10 + (sprite[i][j])]);
 
                 }
 
