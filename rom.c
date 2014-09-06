@@ -13,8 +13,6 @@ int OS_MIRROR = 0;
 int FS_MIRROR;
 int SRAM;
 int MIRRORING;
-static char title[128];
-static int TRAINER;
 
 struct nes_header
 {
@@ -49,7 +47,6 @@ int rom_load(char *romfn, unsigned char *ram_mem, unsigned char *ppu_mem)
     rcb = (header.flags6 - ((header.flags6 >> 4) << 4));
     MIRRORING = (rcb & 1) ? 1 : 0;
     SRAM = (rcb & 2) ? 1 : 0;
-    TRAINER = (rcb & 4) ? 1 : 0;
     FS_MIRROR = (rcb & 8) ? 1 : 0;
 
     backend_read(romfn, 16, 16384, ram_mem + 0x8000);
@@ -60,12 +57,7 @@ int rom_load(char *romfn, unsigned char *ram_mem, unsigned char *ppu_mem)
         backend_read(romfn, 16 + ((PRG - 1) * 16384), 16384, ram_mem + 0xC000);
 
     if (CHR != 0x00)
-    {
-
         backend_read(romfn, 16 + (PRG * 16384), 8192, ppu_mem);
-        backend_read(romfn, 16 + (PRG * 16384), 128, title);
-
-    }
 
     return 0;
 
