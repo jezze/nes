@@ -30,21 +30,56 @@ static unsigned char sprite_memory[256];
 static unsigned char bgcache[256 + 8][256 + 8];
 static unsigned char sprcache[256 + 8][256 + 8];
 
-static void ppu_memwrite(unsigned int address, unsigned char data)
+static unsigned char ppu_memread(unsigned int address)
 {
 
-    int i;
+    if (address == 0x2002)
+    {
+
+        ppu_status_tmp = ppu_status;
+        ppu_status &= 0x7F;
+        ram_write(0x2002, ppu_status);
+        ppu_status &= 0x1F;
+        ram_write(0x2002, ppu_status);
+        ppu_bgscr_f = 0x00;
+        ppu_addr_h = 0x00;
+
+        return (ppu_status_tmp & 0xE0) | (ppu_addr_tmp & 0x1F);
+
+    }
+
+    if (address == 0x2007)
+    {
+
+        unsigned int old = ppu_addr_tmp;
+
+        ppu_addr_tmp = ppu_addr;
+
+        if (!increment_32)
+            ppu_addr++;
+        else
+            ppu_addr += 0x20;
+
+        return ppu_memory[old];
+
+    }
+
+    return 0;
+
+}
+
+static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
+{
 
     if (address == 0x2000)
     {
 
         ppu_addr_tmp = data;
         ppu_control1 = data;
-        memory[address] = data;
         loopyT &= 0xf3ff;
         loopyT |= (data & 3) << 10;
 
-        return;
+        return data;
 
     }
 
@@ -53,9 +88,15 @@ static void ppu_memwrite(unsigned int address, unsigned char data)
 
         ppu_addr_tmp = data;
         ppu_control2 = data;
-        memory[address] = data;
 
-        return;
+        return data;
+
+    }
+
+    if (address == 0x2002)
+    {
+
+        return data;
 
     }
 
@@ -64,9 +105,8 @@ static void ppu_memwrite(unsigned int address, unsigned char data)
 
         ppu_addr_tmp = data;
         sprite_address = data;
-        memory[address] = data;
 
-        return;
+        return data;
 
     }
 
@@ -76,9 +116,8 @@ static void ppu_memwrite(unsigned int address, unsigned char data)
         ppu_addr_tmp = data;
         sprite_memory[sprite_address] = data;
         sprite_address++;
-        memory[address] = data;
 
-        return;
+        return data;
 
     }
 
@@ -94,9 +133,8 @@ static void ppu_memwrite(unsigned int address, unsigned char data)
             loopyT |= (data & 0xF8) >> 3;
             loopyX = data & 0x07;
             ppu_bgscr_f = 0x01;
-            memory[address] = data;
 
-            return;
+            return data;
 
         }
 
@@ -108,9 +146,8 @@ static void ppu_memwrite(unsigned int address, unsigned char data)
             loopyT &= 0x8FFF;
             loopyT |= (data & 0x07) << 12;
             ppu_bgscr_f = 0x00;
-            memory[address] = data;
 
-            return;
+            return data;
 
         }
 
@@ -128,9 +165,8 @@ static void ppu_memwrite(unsigned int address, unsigned char data)
             loopyT &= 0x00FF;
             loopyT |= (data & 0x3F);
             ppu_addr_h = 0x01;
-            memory[address] = data;
 
-            return;
+            return data;
 
         }
 
@@ -142,9 +178,8 @@ static void ppu_memwrite(unsigned int address, unsigned char data)
             loopyT |= data;
             loopyV = loopyT;
             ppu_addr_h = 0x00;
-            memory[address] = data;
 
-            return;
+            return data;
 
         }
 
@@ -154,7 +189,7 @@ static void ppu_memwrite(unsigned int address, unsigned char data)
     {
 
         if (vram_write_flag)
-            return;
+            return data;
 
         ppu_addr_tmp = data;
         ppu_memory[ppu_addr] = data;
@@ -198,19 +233,23 @@ static void ppu_memwrite(unsigned int address, unsigned char data)
         else
             ppu_addr += 0x20;
 
-        memory[address] = data;
-
-        return;
+        return data;
 
     }
 
     if (address == 0x4014)
     {
 
+        unsigned int i;
+
         for (i = 0; i < 256; i++)
             sprite_memory[i] = memory[0x100 * data + i];
 
+        return data;
+
     }
+
+    return data;
 
 }
 

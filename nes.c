@@ -57,75 +57,20 @@ unsigned char ram_read(unsigned int address)
         return memory[address];
 
     if (address == 0x2002)
-    {
-
-        ppu_status_tmp = ppu_status;
-        ppu_status &= 0x7F;
-        ram_write(0x2002, ppu_status);
-        ppu_status &= 0x1F;
-        ram_write(0x2002, ppu_status);
-        ppu_bgscr_f = 0x00;
-        ppu_addr_h = 0x00;
-
-        return (ppu_status_tmp & 0xE0) | (ppu_addr_tmp & 0x1F);
-
-    }
+        return ppu_memread(address);
 
     if (address == 0x2007)
-    {
-
-        unsigned int old = ppu_addr_tmp;
-
-        ppu_addr_tmp = ppu_addr;
-
-        if (!increment_32)
-            ppu_addr++;
-        else
-            ppu_addr += 0x20;
-
-        return ppu_memory[old];
-
-    }
-
-    if (address == 0x4015)
-    {
-
-        return memory[address];
-
-    }
+        return ppu_memread(address);
 
     if (address == 0x4016)
     {
 
         memory[address] = pad1_state[pad1_readcount];
 
-        switch (pad1_readcount)
-        {
-
-        case 0:
-        case 1:
-        case 2:
-        case 3:
-        case 4:
-        case 5:
-        case 6:
-            pad1_readcount++;
-
-            break;
-
-        case 7:
+        if (pad1_readcount == 7)
             pad1_readcount = 0;
-
-            break;
-
-        }
-
-        return memory[address];
-
-    }
-
-    if (address == 0x4017)
-    {
+        else
+            pad1_readcount++;
 
         return memory[address];
 
@@ -135,22 +80,13 @@ unsigned char ram_read(unsigned int address)
 
 }
 
-void ram_write(unsigned int address,unsigned char data)
+void ram_write(unsigned int address, unsigned char data)
 {
-
-    if (address == 0x2002)
-    {
-
-        memory[address] = data;
-
-        return;
-
-    }
 
     if (address > 0x1fff && address < 0x4000)
     {
 
-        ppu_memwrite(address, data);
+        memory[address] = ppu_memwrite(address, data);
 
         return;
 
@@ -159,7 +95,7 @@ void ram_write(unsigned int address,unsigned char data)
     if (address == 0x4014)
     {
 
-        ppu_memwrite(address, data);
+        memory[address] = ppu_memwrite(address, data);
 
         return;
 
