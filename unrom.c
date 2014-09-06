@@ -4,7 +4,7 @@ static void unrom_switchprg(int bank)
     int prg_size = 16384;
     unsigned int address = 0x8000;
 
-    memcpy(memory + address, romcache + 16 + (bank * prg_size), prg_size);
+    backend_read(romfn, 16 + (bank * prg_size), prg_size, memory + address);
 
 }
 

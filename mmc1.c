@@ -59,7 +59,7 @@ static void mmc1_switchprg(int bank, int pagesize, int area)
 
     }
 
-    memcpy(memory + address, romcache + 16 + (bank * prg_size), prg_size);
+    backend_read(romfn, 16 + (bank * prg_size), prg_size, memory + address);
 
 }
 
@@ -114,7 +114,7 @@ static void mmc1_switchchr(int bank, int pagesize, int area)
 
     }
 
-    memcpy(ppu_memory + address, romcache + 16 + chr_start + (bank * chr_size), chr_size);
+    backend_read(romfn, 16 + chr_start + (bank * chr_size), chr_size, ppu_memory + address);
 
 }
 

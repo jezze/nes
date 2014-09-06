@@ -12,7 +12,7 @@ static void mmc3_switchprg(unsigned int address, int bank)
 
     int prg_size = 8192;
 
-    memcpy(memory + address, romcache + 16 + (bank * prg_size), prg_size);
+    backend_read(romfn, 16 + (bank * prg_size), prg_size, memory + address);
 
 }
 
@@ -23,14 +23,14 @@ static void mmc3_switchchr(unsigned int address, int bank, int pagecount)
     int chr_size = 1024;
     int chr_start = prg_size * PRG;
 
-    memcpy(ppu_memory + address, romcache + 16 + chr_start + (bank * chr_size), chr_size * pagecount);
+    backend_read(romfn, 16 + chr_start + (bank * chr_size), chr_size * pagecount, ppu_memory + address);
 
 }
 
 static void mmc3_reset()
 {
 
-    memcpy(memory + 0xa000, romcache + 16, 8192);
+    backend_read(romfn, 16, 8192, memory + 0xa000);
 
 }
 

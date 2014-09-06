@@ -270,7 +270,7 @@ static void ppu_checkspritehit(int width, int scanline)
     for (i = 0; i < width; i++)
     {
 
-        if ((bgcache[i] [scanline - 1] > 0x00) && (sprcache[i][scanline - 1] > 0x00))
+        if ((bgcache[i][scanline - 1] > 0x00) && (sprcache[i][scanline - 1] > 0x00))
             ppu_status |= 0x40;
 
     }
@@ -500,8 +500,8 @@ static void ppu_rendersprite(int y, int x, int pattern_number, int attribs, int 
             for (j = 0; j < jmax; j++)
             {
 
-                bit1[(imax - 1) - i] [j] = ((ppu_memory[sprite_start + j] >> i) & 0x01) ? 1 : 0;
-                bit2[(imax - 1) - i] [j] = ((ppu_memory[sprite_start + 8 + j] >> i) & 0x01) ? 1 : 0;
+                bit1[(imax - 1) - i][j] = ((ppu_memory[sprite_start + j] >> i) & 0x01) ? 1 : 0;
+                bit2[(imax - 1) - i][j] = ((ppu_memory[sprite_start + 8 + j] >> i) & 0x01) ? 1 : 0;
 
             }
 

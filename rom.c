@@ -4,6 +4,7 @@
 #include "nes.h"
 #include "cpu.h"
 #include "rom.h"
+#include "backend.h"
 
 unsigned char PRG;
 unsigned char CHR;
@@ -15,90 +16,54 @@ int MIRRORING;
 static char title[128];
 static int TRAINER;
 
-int rom_parse(char *romfn)
+struct nes_header
 {
 
-    unsigned char header[15];
-    FILE *romfp = fopen(romfn,"rb");
+    char identity[4];
+    char prgromsize;
+    char chrromsize;
+    char flags6;
+    char flags7;
+    char prgramsize;
+    char flags9;
+    char flags10;
+    char zero[5];
+
+};
+
+int rom_load(char *romfn, unsigned char *ram_mem, unsigned char *ppu_mem)
+{
+
+    struct nes_header header;
+    char identity[4] = {'N', 'E', 'S', 0x1A};
     int rcb;
-    int i;
 
-    if (!romfp)
+    backend_read(romfn, 0, 16, &header);
+
+    if (memcmp(header.identity, identity, 4))
         return 1;
 
-    fseek(romfp, 0, 2);
-
-    romlen = ftell(romfp);
-
-    fseek(romfp, 0, SEEK_SET);
-    fread(&header[0], 1, 15, romfp);
-    fclose(romfp);
-
-    if ((header[0] != 'N') || (header[1] != 'E') || (header[2] != 'S') || (header[3] != 0x1A))
-        return 1;
-
-    for (i = 8; i < 15; i++)
-    {
-
-        if ((header[i] != 0x00) && (header[i] != 0xFF))
-        {
-
-        }
-
-    }
-
-    PRG = header[4];
-
-    if (header[5] == 0x00)
-    {
-
-    }
-
-    CHR = header[5];
-    MAPPER = (header[6] >> 4);
-    MAPPER |= (header[7] & 0xf0);
-    rcb = (header[6] - ((header[6] >> 4) << 4));
+    PRG = header.prgromsize;
+    CHR = header.chrromsize;
+    MAPPER = (header.flags6 >> 4) | (header.flags7 & 0xf0);
+    rcb = (header.flags6 - ((header.flags6 >> 4) << 4));
     MIRRORING = (rcb & 1) ? 1 : 0;
     SRAM = (rcb & 2) ? 1 : 0;
     TRAINER = (rcb & 4) ? 1 : 0;
     FS_MIRROR = (rcb & 8) ? 1 : 0;
 
-    return 0;
-
-}
-
-int rom_load(char *romfn, unsigned char *romcache, unsigned char *ram_mem, unsigned char *ppu_mem)
-{
-
-    FILE *romfp = fopen(romfn, "rb");
-
-    if (!romfp)
-        return 1;
-
-    fread(&romcache[0x0000], 1, romlen, romfp);
-    fclose(romfp);
+    backend_read(romfn, 16, 16384, ram_mem + 0x8000);
 
     if (PRG == 0x01)
-    {
-
-        memcpy(ram_mem + 0x8000, romcache + 16, 16384);
-        memcpy(ram_mem + 0xC000, romcache + 16, 16384);
-
-    }
-
+        backend_read(romfn, 16, 16384, ram_mem + 0xC000);
     else
-    {
-
-        memcpy(ram_mem + 0x8000, romcache + 16, 16384);
-        memcpy(ram_mem + 0xC000, romcache + 16 + ((PRG - 1) * 16384), 16384);
-
-    }
+        backend_read(romfn, 16 + ((PRG - 1) * 16384), 16384, ram_mem + 0xC000);
 
     if (CHR != 0x00)
     {
 
-        memcpy(ppu_mem, romcache + 16 + (PRG * 16384), 8192);
-        memcpy(title, romcache + 16 + (PRG * 16384) + 8192, 128);
+        backend_read(romfn, 16 + (PRG * 16384), 8192, ppu_mem);
+        backend_read(romfn, 16 + (PRG * 16384), 128, title);
 
     }
 

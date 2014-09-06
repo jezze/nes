@@ -1,5 +1,5 @@
 int rom_parse(char *romfn);
-int rom_load(char *romfn, unsigned char *romcache, unsigned char *ram_mem, unsigned char *ppu_mem);
+int rom_load(char *romfn, unsigned char *ram_mem, unsigned char *ppu_mem);
 
 extern unsigned char PRG;
 extern unsigned char CHR;

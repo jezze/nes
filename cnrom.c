@@ -6,7 +6,7 @@ static void cnrom_switchchr(int bank)
     int chr_size = 8192;
     int chr_start = prg_size * PRG;
 
-    memcpy(ppu_memory + address, romcache + 16 + chr_start + (bank * chr_size), chr_size);
+    backend_read(romfn, 16 + chr_start + (bank * chr_size), chr_size, ppu_memory + address);
 
 }
 

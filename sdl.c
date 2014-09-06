@@ -228,6 +228,24 @@ void backend_delay(unsigned int ms)
 
 }
 
+unsigned int backend_read(char *path, unsigned int offset, unsigned int count, void *buffer)
+{
+
+    FILE *fp = fopen(path, "rb");
+
+    if (!fp)
+        return 0;
+
+    fseek(fp, offset, SEEK_SET);
+
+    count = fread(buffer, count, 1, fp);
+
+    fclose(fp);
+
+    return count;
+
+}
+
 void backend_readsavefile(char *name, unsigned char *memory)
 {
 

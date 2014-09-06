@@ -4,10 +4,8 @@
 #include "nes.h"
 #include "cpu.h"
 #include "rom.h"
-#include "sdl.h"
+#include "backend.h"
 
-long romlen;
-static unsigned char *romcache;
 static unsigned char memory[65536];
 static int height;
 static int width;
@@ -288,19 +286,8 @@ int main(int argc, char **argv)
 
     romfn = argv[1];
 
-    if (rom_parse(romfn) == 1)
+    if (rom_load(romfn, memory, ppu_memory) == 1)
         return 1;
-
-    romcache = (unsigned char *)malloc(romlen);
-
-    if (rom_load(romfn, romcache, memory, ppu_memory) == 1)
-    {
-
-        free(romcache);
-
-        return 1;
-
-    }
 
     if (MAPPER == 4)
         mmc3_reset();
@@ -315,7 +302,6 @@ int main(int argc, char **argv)
     cpu_reset(memory);
     input_reset();
     run(pal_start_int, pal_vblank_int, pal_vblank_timeout, pal_scanline_refresh);
-    free(romcache);
 
     return 0;
 
