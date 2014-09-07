@@ -224,8 +224,14 @@ static void ppu_checkspritehit(int width, int scanline)
     for (i = 0; i < width; i++)
     {
 
-        if ((ppu_background_cache[i][scanline - 1] > 0x00) && (ppu_sprite_cache[i][scanline - 1] > 0x00))
+        if (ppu_background_cache[i][scanline - 1] && ppu_sprite_cache[i][scanline - 1])
+        {
+
             memory[PPUSTATUS] |= 0x40;
+
+            return;
+
+        }
 
     }
 
