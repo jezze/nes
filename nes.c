@@ -190,9 +190,7 @@ static void run(int start_int, int vblank_int, int vblank_timeout, int scanline_
 
         cpu_execute(start_int, memory);
 
-        ppu_status |= 0x80;
-
-        ram_write(0x2002, ppu_status);
+        memory[PPUSTATUS] |= 0x80;
 
         counter += cpu_execute(12, memory);
 
@@ -200,11 +198,9 @@ static void run(int start_int, int vblank_int, int vblank_timeout, int scanline_
             counter += cpu_nmi(counter, memory);
 
         counter += cpu_execute(vblank_timeout, memory);
-        ppu_status &= 0x3F;
+        memory[PPUSTATUS] &= 0x3F;
 
-        ram_write(0x2002, ppu_status);
-
-        loopyV = loopyT;
+        ppu_background_loopyV = ppu_background_loopyT;
 
         backend_lock();
 

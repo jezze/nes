@@ -6,38 +6,34 @@
 #define PPUSCROLL                       0x2005
 #define PPUADDR                         0x2006
 #define PPUDATA                         0x2007
-#define PPUCTRL_NAMETABLE               (ppu_ctrl & 0x00)
-#define PPUCTRL_INCREMENT               (ppu_ctrl & 0x04)
-#define PPUCTRL_SPRITEHI                (ppu_ctrl & 0x08)
-#define PPUCTRL_BACKGROUNDHI            (ppu_ctrl & 0x10)
-#define PPUCTRL_SPRITE16                (ppu_ctrl & 0x20)
-#define PPUCTRL_VBLANKNMI               (ppu_ctrl & 0x80)
-#define PPUMASK_MONOCHROME              (ppu_mask & 0x01)
-#define PPUMASK_BACKGROUNDCLIP          (ppu_mask & 0x02)
-#define PPUMASK_SPRITECLIP              (ppu_mask & 0x04)
-#define PPUMASK_BACKGROUNDSHOW          (ppu_mask & 0x08)
-#define PPUMASK_SPRITESHOW              (ppu_mask & 0x10)
-#define PPUSTATUS_VRAMWRITEFLAG         (ppu_status & 0x10)
-#define PPUSTATUS_SPRITEOVERFLOW        (ppu_status & 0x20)
-#define PPUSTATUS_SPRITE0HIT            (ppu_status & 0x40)
-#define PPUSTATUS_VBLANKON              (ppu_status & 0x80)
+#define PPUCTRL_NAMETABLE               (memory[PPUCTRL] & 0x00)
+#define PPUCTRL_INCREMENT               (memory[PPUCTRL] & 0x04)
+#define PPUCTRL_SPRITEHI                (memory[PPUCTRL] & 0x08)
+#define PPUCTRL_BACKGROUNDHI            (memory[PPUCTRL] & 0x10)
+#define PPUCTRL_SPRITE16                (memory[PPUCTRL] & 0x20)
+#define PPUCTRL_VBLANKNMI               (memory[PPUCTRL] & 0x80)
+#define PPUMASK_MONOCHROME              (memory[PPUMASK] & 0x01)
+#define PPUMASK_BACKGROUNDCLIP          (memory[PPUMASK] & 0x02)
+#define PPUMASK_SPRITECLIP              (memory[PPUMASK] & 0x04)
+#define PPUMASK_BACKGROUNDSHOW          (memory[PPUMASK] & 0x08)
+#define PPUMASK_SPRITESHOW              (memory[PPUMASK] & 0x10)
+#define PPUSTATUS_VRAMWRITEFLAG         (memory[PPUSTATUS] & 0x10)
+#define PPUSTATUS_SPRITEOVERFLOW        (memory[PPUSTATUS] & 0x20)
+#define PPUSTATUS_SPRITE0HIT            (memory[PPUSTATUS] & 0x40)
+#define PPUSTATUS_VBLANKON              (memory[PPUSTATUS] & 0x80)
 
 static unsigned char ppu_memory[16384];
-static unsigned int ppu_ctrl = 0x00;
-static unsigned int ppu_mask = 0x00;
-static unsigned int ppu_addr_h = 0x00;
+static unsigned int ppu_addr_latch = 0;
 static unsigned int ppu_addr = 0x2000;
-static unsigned int ppu_addr_tmp = 0x2000;
-static unsigned int loopyT = 0x00;
-static unsigned int loopyV = 0x00;
-static unsigned int loopyX = 0x00;
-static unsigned int ppu_status;
-static unsigned int ppu_status_tmp = 0x00;
-static unsigned int ppu_bgscr_f = 0x00;
-static unsigned int sprite_address = 0x00;
-static unsigned char sprite_memory[256];
-static unsigned char bgcache[256 + 8][256 + 8];
-static unsigned char sprcache[256 + 8][256 + 8];
+static unsigned int ppu_last = 0x2000;
+static unsigned int ppu_scroll_latch = 0;
+static unsigned int ppu_background_loopyT = 0x00;
+static unsigned int ppu_background_loopyV = 0x00;
+static unsigned int ppu_background_loopyX = 0x00;
+static unsigned char ppu_background_cache[256 + 8][256 + 8];
+static unsigned int ppu_sprite_addr = 0x00;
+static unsigned char ppu_sprite_memory[256];
+static unsigned char ppu_sprite_cache[256 + 8][256 + 8];
 
 static unsigned char ppu_memread(unsigned int address)
 {
@@ -45,29 +41,23 @@ static unsigned char ppu_memread(unsigned int address)
     if (address == PPUSTATUS)
     {
 
-        ppu_status_tmp = ppu_status;
-        ppu_status &= 0x7F;
-        ram_write(PPUSTATUS, ppu_status);
-        ppu_status &= 0x1F;
-        ram_write(PPUSTATUS, ppu_status);
-        ppu_bgscr_f = 0x00;
-        ppu_addr_h = 0x00;
+        unsigned int old = memory[PPUSTATUS];
 
-        return (ppu_status_tmp & 0xE0) | (ppu_addr_tmp & 0x1F);
+        memory[PPUSTATUS] &= 0x7F;
+        ppu_scroll_latch = 0;
+        ppu_addr_latch = 0;
+
+        return (old & 0xE0) | (ppu_last & 0x1F);
 
     }
 
     if (address == PPUDATA)
     {
 
-        unsigned int old = ppu_addr_tmp;
+        unsigned int old = ppu_last;
 
-        ppu_addr_tmp = ppu_addr;
-
-        if (!PPUCTRL_INCREMENT)
-            ppu_addr++;
-        else
-            ppu_addr += 0x20;
+        ppu_last = ppu_addr;
+        ppu_addr += (PPUCTRL_INCREMENT) ? 32 : 1;
 
         return ppu_memory[old];
 
@@ -83,10 +73,10 @@ static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
     if (address == PPUCTRL)
     {
 
-        ppu_addr_tmp = data;
-        ppu_ctrl = data;
-        loopyT &= 0xf3ff;
-        loopyT |= (data & 3) << 10;
+        ppu_last = data;
+        memory[PPUCTRL] = data;
+        ppu_background_loopyT &= 0xf3ff;
+        ppu_background_loopyT |= (data & 3) << 10;
 
         return data;
 
@@ -95,8 +85,8 @@ static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
     if (address == PPUMASK)
     {
 
-        ppu_addr_tmp = data;
-        ppu_mask = data;
+        ppu_last = data;
+        memory[PPUMASK] = data;
 
         return data;
 
@@ -112,8 +102,8 @@ static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
     if (address == PPUOAMADDR)
     {
 
-        ppu_addr_tmp = data;
-        sprite_address = data;
+        ppu_last = data;
+        ppu_sprite_addr = data;
 
         return data;
 
@@ -122,9 +112,9 @@ static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
     if (address == PPUOAMDATA)
     {
 
-        ppu_addr_tmp = data;
-        sprite_memory[sprite_address] = data;
-        sprite_address++;
+        ppu_last = data;
+        ppu_sprite_memory[ppu_sprite_addr] = data;
+        ppu_sprite_addr++;
 
         return data;
 
@@ -133,64 +123,60 @@ static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
     if (address == PPUSCROLL)
     {
 
-        ppu_addr_tmp = data;
+        ppu_last = data;
 
-        if (ppu_bgscr_f == 0x00)
+        if (ppu_scroll_latch)
         {
 
-            loopyT &= 0xFFE0;
-            loopyT |= (data & 0xF8) >> 3;
-            loopyX = data & 0x07;
-            ppu_bgscr_f = 0x01;
-
-            return data;
+            ppu_background_loopyT &= 0xFC1F;
+            ppu_background_loopyT |= (data & 0xF8) << 2;
+            ppu_background_loopyT &= 0x8FFF;
+            ppu_background_loopyT |= (data & 0x07) << 12;
+            ppu_scroll_latch = 0;
 
         }
 
-        if (ppu_bgscr_f == 0x01)
+        else
         {
 
-            loopyT &= 0xFC1F;
-            loopyT |= (data & 0xF8) << 2;
-            loopyT &= 0x8FFF;
-            loopyT |= (data & 0x07) << 12;
-            ppu_bgscr_f = 0x00;
-
-            return data;
+            ppu_background_loopyT &= 0xFFE0;
+            ppu_background_loopyT |= (data & 0xF8) >> 3;
+            ppu_background_loopyX = data & 0x07;
+            ppu_scroll_latch = 1;
 
         }
+
+        return data;
 
     }
 
     if (address == PPUADDR)
     {
 
-        ppu_addr_tmp = data;
+        ppu_last = data;
 
-        if (ppu_addr_h == 0x00)
-        {
-
-            ppu_addr = (data << 8);
-            loopyT &= 0x00FF;
-            loopyT |= (data & 0x3F);
-            ppu_addr_h = 0x01;
-
-            return data;
-
-        }
-
-        if (ppu_addr_h == 0x01)
+        if (ppu_addr_latch)
         {
 
             ppu_addr |= data;
-            loopyT &= 0xFF00;
-            loopyT |= data;
-            loopyV = loopyT;
-            ppu_addr_h = 0x00;
-
-            return data;
+            ppu_background_loopyT &= 0xFF00;
+            ppu_background_loopyT |= data;
+            ppu_background_loopyV = ppu_background_loopyT;
+            ppu_addr_latch = 0;
 
         }
+
+        else
+        {
+
+            ppu_addr = (data << 8);
+            ppu_background_loopyT &= 0x00FF;
+            ppu_background_loopyT |= (data & 0x3F);
+            ppu_addr_latch = 1;
+
+        }
+
+        return data;
 
     }
 
@@ -200,7 +186,7 @@ static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
         if (PPUSTATUS_VRAMWRITEFLAG)
             return data;
 
-        ppu_addr_tmp = data;
+        ppu_last = data;
         ppu_memory[ppu_addr] = data;
 
         if ((ppu_addr > 0x1999) && (ppu_addr < 0x3000))
@@ -235,12 +221,8 @@ static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
         if (ppu_addr == 0x3f10)
             ppu_memory[0x3f00] = data;
 
-        ppu_addr_tmp = ppu_addr;
-
-        if (!PPUCTRL_INCREMENT)
-            ppu_addr++;
-        else
-            ppu_addr += 0x20;
+        ppu_last = ppu_addr;
+        ppu_addr += (PPUCTRL_INCREMENT) ? 32 : 1;
 
         return data;
 
@@ -252,7 +234,7 @@ static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
         unsigned int i;
 
         for (i = 0; i < 256; i++)
-            sprite_memory[i] = memory[0x100 * data + i];
+            ppu_sprite_memory[i] = memory[0x100 * data + i];
 
         return data;
 
@@ -270,8 +252,8 @@ static void ppu_checkspritehit(int width, int scanline)
     for (i = 0; i < width; i++)
     {
 
-        if ((bgcache[i][scanline - 1] > 0x00) && (sprcache[i][scanline - 1] > 0x00))
-            ppu_status |= 0x40;
+        if ((ppu_background_cache[i][scanline - 1] > 0x00) && (ppu_sprite_cache[i][scanline - 1] > 0x00))
+            memory[PPUSTATUS] |= 0x40;
 
     }
 
@@ -289,12 +271,12 @@ static void ppu_renderbackground(int scanline)
     int attribs;
     unsigned char tile[8];
 
-    loopyV &= 0xfbe0;
-    loopyV |= (loopyT & 0x041f);
-    x_scroll = (loopyV & 0x1f);
-    y_scroll = (loopyV & 0x03e0) >> 5;
-    nt_addr = 0x2000 + (loopyV & 0x0fff);
-    at_addr = 0x2000 + (loopyV & 0x0c00) + 0x03c0 + ((y_scroll & 0xfffc) << 1) + (x_scroll >> 2);
+    ppu_background_loopyV &= 0xfbe0;
+    ppu_background_loopyV |= (ppu_background_loopyT & 0x041f);
+    x_scroll = (ppu_background_loopyV & 0x1f);
+    y_scroll = (ppu_background_loopyV & 0x03e0) >> 5;
+    nt_addr = 0x2000 + (ppu_background_loopyV & 0x0fff);
+    at_addr = 0x2000 + (ppu_background_loopyV & 0x0c00) + 0x03c0 + ((y_scroll & 0xfffc) << 1) + (x_scroll >> 2);
 
     if ((y_scroll & 0x0002) == 0)
     {
@@ -320,7 +302,7 @@ static void ppu_renderbackground(int scanline)
     {
 
         int ttc = tile_count << 3;
-        int pt_addr = (ppu_memory[nt_addr] << 4) + ((loopyV & 0x7000) >> 12);
+        int pt_addr = (ppu_memory[nt_addr] << 4) + ((ppu_background_loopyV & 0x7000) >> 12);
         char a1, a2;
 
         if (PPUCTRL_BACKGROUNDHI)
@@ -345,31 +327,31 @@ static void ppu_renderbackground(int scanline)
 
         }
 
-        if ((tile_count == 0) && (loopyX != 0))
+        if ((tile_count == 0) && (ppu_background_loopyX != 0))
         {
 
-            for (i = 0; i < 8 - loopyX; i++)
+            for (i = 0; i < 8 - ppu_background_loopyX; i++)
             {
 
-                bgcache[ttc + i][scanline] = tile[loopyX + i];
+                ppu_background_cache[ttc + i][scanline] = tile[ppu_background_loopyX + i];
 
                 if (PPUMASK_BACKGROUNDSHOW)
-                    backend_drawpixel(ttc + i, scanline, ppu_memory[0x3f00 + (tile[loopyX + i])]);
+                    backend_drawpixel(ttc + i, scanline, ppu_memory[0x3f00 + (tile[ppu_background_loopyX + i])]);
 
             }
 
         }
 
-        else if ((tile_count == 32) && (loopyX != 0))
+        else if ((tile_count == 32) && (ppu_background_loopyX != 0))
         {
 
-            for (i = 0; i < loopyX; i++)
+            for (i = 0; i < ppu_background_loopyX; i++)
             {
 
-                bgcache[ttc + i - loopyX][scanline] = tile[i];
+                ppu_background_cache[ttc + i - ppu_background_loopyX][scanline] = tile[i];
 
                 if (PPUMASK_BACKGROUNDSHOW)
-                    backend_drawpixel(ttc + i - loopyX, scanline, ppu_memory[0x3f00 + (tile[i])]);
+                    backend_drawpixel(ttc + i - ppu_background_loopyX, scanline, ppu_memory[0x3f00 + (tile[i])]);
 
             }
 
@@ -381,10 +363,10 @@ static void ppu_renderbackground(int scanline)
             for (i = 0; i < 8; i++)
             {
 
-                bgcache[ttc + i - loopyX][scanline] = tile[i];
+                ppu_background_cache[ttc + i - ppu_background_loopyX][scanline] = tile[i];
 
                 if (PPUMASK_BACKGROUNDSHOW)
-                    backend_drawpixel(ttc + i - loopyX, scanline, ppu_memory[0x3f00 + (tile[i])]);
+                    backend_drawpixel(ttc + i - ppu_background_loopyX, scanline, ppu_memory[0x3f00 + (tile[i])]);
 
             }
 
@@ -438,26 +420,26 @@ static void ppu_renderbackground(int scanline)
 
     }
 
-    if ((loopyV & 0x7000) == 0x7000)
+    if ((ppu_background_loopyV & 0x7000) == 0x7000)
     {
 
-        loopyV &= 0x8fff;
+        ppu_background_loopyV &= 0x8fff;
 
-        if ((loopyV & 0x03e0) == 0x03a0)
+        if ((ppu_background_loopyV & 0x03e0) == 0x03a0)
         {
 
-            loopyV ^= 0x0800;
-            loopyV &= 0xfc1f;
+            ppu_background_loopyV ^= 0x0800;
+            ppu_background_loopyV &= 0xfc1f;
 
         }
 
         else
         {
 
-            if ((loopyV & 0x03e0) == 0x03e0)
-                loopyV &= 0xfc1f;
+            if ((ppu_background_loopyV & 0x03e0) == 0x03e0)
+                ppu_background_loopyV &= 0xfc1f;
             else
-                loopyV += 0x0020;
+                ppu_background_loopyV += 0x0020;
 
         }
 
@@ -466,7 +448,7 @@ static void ppu_renderbackground(int scanline)
     else
     {
 
-        loopyV += 0x1000;
+        ppu_background_loopyV += 0x1000;
 
     }
 
@@ -579,7 +561,7 @@ static void ppu_rendersprite(int y, int x, int pattern_number, int attribs, int 
                 sprite[i][j] = 3 + ((attribs & 0x03) << 0x02);
 
             if (spr_nr == 0)
-                sprcache[x + i][y + j] = sprite[i][j];
+                ppu_sprite_cache[x + i][y + j] = sprite[i][j];
 
             if (sprite[i][j] != 0)
             {
@@ -595,7 +577,7 @@ static void ppu_rendersprite(int y, int x, int pattern_number, int attribs, int 
                 else
                 {
 
-                    if (bgcache[x + i][y + j] == 0)
+                    if (ppu_background_cache[x + i][y + j] == 0)
                         if (PPUMASK_BACKGROUNDSHOW)
                             backend_drawpixel(x + i, y + j, ppu_memory[0x3f10 + (sprite[i][j])]);
 
@@ -614,10 +596,10 @@ static void ppu_rendersprites()
 
     int i = 0;
 
-    memset(sprcache, 0x00, sizeof (sprcache));
+    memset(ppu_sprite_cache, 0x00, sizeof (ppu_sprite_cache));
 
     for (i = 63; i >= 0; i--)
-        ppu_rendersprite(sprite_memory[i * 4], sprite_memory[i * 4 + 3], sprite_memory[i * 4 + 1], sprite_memory[i * 4 + 2], i);
+        ppu_rendersprite(ppu_sprite_memory[i * 4], ppu_sprite_memory[i * 4 + 3], ppu_sprite_memory[i * 4 + 1], ppu_sprite_memory[i * 4 + 2], i);
 
 }
 
