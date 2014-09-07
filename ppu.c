@@ -25,7 +25,7 @@
 static unsigned char ppu_memory[16384];
 static unsigned int ppu_addr_latch = 0;
 static unsigned int ppu_addr = 0x2000;
-static unsigned int ppu_last = 0x2000;
+static unsigned int ppu_lastdata = 0;
 static unsigned int ppu_scroll_latch = 0;
 static unsigned int ppu_background_loopyT = 0x00;
 static unsigned int ppu_background_loopyV = 0x00;
@@ -47,16 +47,16 @@ static unsigned char ppu_memread(unsigned int address)
         ppu_scroll_latch = 0;
         ppu_addr_latch = 0;
 
-        return (old & 0xE0) | (ppu_last & 0x1F);
+        return (old & 0xE0) | (ppu_lastdata & 0x1F);
 
     }
 
     if (address == PPUDATA)
     {
 
-        unsigned int old = ppu_last;
+        unsigned int old = ppu_lastdata;
 
-        ppu_last = ppu_addr;
+        ppu_lastdata = ppu_addr;
         ppu_addr += (PPUCTRL_INCREMENT) ? 32 : 1;
 
         return ppu_memory[old];
@@ -70,30 +70,13 @@ static unsigned char ppu_memread(unsigned int address)
 static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
 {
 
+    ppu_lastdata = data;
+
     if (address == PPUCTRL)
     {
 
-        ppu_last = data;
-        memory[PPUCTRL] = data;
         ppu_background_loopyT &= 0xf3ff;
         ppu_background_loopyT |= (data & 3) << 10;
-
-        return data;
-
-    }
-
-    if (address == PPUMASK)
-    {
-
-        ppu_last = data;
-        memory[PPUMASK] = data;
-
-        return data;
-
-    }
-
-    if (address == PPUSTATUS)
-    {
 
         return data;
 
@@ -102,7 +85,6 @@ static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
     if (address == PPUOAMADDR)
     {
 
-        ppu_last = data;
         ppu_sprite_addr = data;
 
         return data;
@@ -112,7 +94,6 @@ static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
     if (address == PPUOAMDATA)
     {
 
-        ppu_last = data;
         ppu_sprite_memory[ppu_sprite_addr] = data;
         ppu_sprite_addr++;
 
@@ -122,8 +103,6 @@ static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
 
     if (address == PPUSCROLL)
     {
-
-        ppu_last = data;
 
         if (ppu_scroll_latch)
         {
@@ -152,8 +131,6 @@ static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
 
     if (address == PPUADDR)
     {
-
-        ppu_last = data;
 
         if (ppu_addr_latch)
         {
@@ -186,7 +163,6 @@ static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
         if (PPUSTATUS_VRAMWRITEFLAG)
             return data;
 
-        ppu_last = data;
         ppu_memory[ppu_addr] = data;
 
         if ((ppu_addr > 0x1999) && (ppu_addr < 0x3000))
@@ -221,7 +197,6 @@ static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
         if (ppu_addr == 0x3f10)
             ppu_memory[0x3f00] = data;
 
-        ppu_last = ppu_addr;
         ppu_addr += (PPUCTRL_INCREMENT) ? 32 : 1;
 
         return data;
