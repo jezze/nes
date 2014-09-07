@@ -8,8 +8,6 @@
 struct nes_header header;
 unsigned char mapper;
 static unsigned char memory[65536];
-static int height;
-static int width;
 static int pad1_state[8];
 static int pad1_readcount = 0;
 static int running = 1;
@@ -174,7 +172,7 @@ void ram_write(unsigned int address, unsigned char data)
 
 }
 
-static void run(int start_int, int vblank_int, int vblank_timeout, int scanline_refresh)
+static void run(int width, int height, int start_int, int vblank_int, int vblank_timeout, int scanline_refresh)
 {
 
     int counter = 0;
@@ -204,7 +202,7 @@ static void run(int start_int, int vblank_int, int vblank_timeout, int scanline_
 
         backend_lock();
 
-        for (scanline = 0; scanline < 240; scanline++)
+        for (scanline = 0; scanline < height; scanline++)
         {
 
             if (!PPUSTATUS_SPRITE0HIT)
@@ -260,6 +258,8 @@ int main(int argc, char **argv)
     int pal_vblank_int = pal_speed / 50;
     int pal_vblank_timeout = (313 - 240) * pal_vblank_int / 313;
     int pal_scanline_refresh = pal_vblank_int / 313;
+    int width = 256;
+    int height = 240;
 
     if (argc < 2)
         return 1;
@@ -277,13 +277,10 @@ int main(int argc, char **argv)
     if (SRAM == 1)
         backend_readsavefile("game.sav", memory);
 
-    height = 240;
-    width = 256;
-
     backend_init(width, height);
     cpu_reset(memory);
     input_reset();
-    run(pal_start_int, pal_vblank_int, pal_vblank_timeout, pal_scanline_refresh);
+    run(width, height, pal_start_int, pal_vblank_int, pal_vblank_timeout, pal_scanline_refresh);
 
     return 0;
 
