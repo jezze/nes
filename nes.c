@@ -200,7 +200,7 @@ static void run(int start_int, int vblank_int, int vblank_timeout, int scanline_
         counter += cpu_execute(vblank_timeout, memory);
         memory[PPUSTATUS] &= 0x3F;
 
-        ppu_background_loopyV = ppu_background_loopyT;
+        ppu_register_v = ppu_register_t;
 
         backend_lock();
 

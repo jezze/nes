@@ -23,13 +23,12 @@
 #define PPUSTATUS_VBLANKON              (memory[PPUSTATUS] & 0x80)
 
 static unsigned char ppu_memory[16384];
-static unsigned int ppu_addr_latch = 0;
 static unsigned int ppu_addr = 0x2000;
 static unsigned int ppu_lastdata = 0;
-static unsigned int ppu_scroll_latch = 0;
-static unsigned int ppu_background_loopyT = 0x00;
-static unsigned int ppu_background_loopyV = 0x00;
-static unsigned int ppu_background_loopyX = 0x00;
+static unsigned int ppu_register_t = 0;
+static unsigned int ppu_register_v = 0;
+static unsigned int ppu_register_x = 0;
+static unsigned int ppu_register_w = 0;
 static unsigned char ppu_background_cache[256 + 8][256 + 8];
 static unsigned int ppu_sprite_addr = 0x00;
 static unsigned char ppu_sprite_memory[256];
@@ -44,8 +43,7 @@ static unsigned char ppu_memread(unsigned int address)
         unsigned int old = memory[PPUSTATUS];
 
         memory[PPUSTATUS] &= 0x7F;
-        ppu_scroll_latch = 0;
-        ppu_addr_latch = 0;
+        ppu_register_w = 0;
 
         return (old & 0xE0) | (ppu_lastdata & 0x1F);
 
@@ -75,8 +73,8 @@ static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
     if (address == PPUCTRL)
     {
 
-        ppu_background_loopyT &= 0xf3ff;
-        ppu_background_loopyT |= (data & 3) << 10;
+        ppu_register_t &= 0xF3FF;
+        ppu_register_t |= (data & 0x03) << 10;
 
         return data;
 
@@ -104,24 +102,23 @@ static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
     if (address == PPUSCROLL)
     {
 
-        if (ppu_scroll_latch)
+        if (ppu_register_w)
         {
 
-            ppu_background_loopyT &= 0xFC1F;
-            ppu_background_loopyT |= (data & 0xF8) << 2;
-            ppu_background_loopyT &= 0x8FFF;
-            ppu_background_loopyT |= (data & 0x07) << 12;
-            ppu_scroll_latch = 0;
+            ppu_register_t &= 0x8C1F;
+            ppu_register_t |= (data & 0x07) << 12;
+            ppu_register_t |= (data & 0xF8) << 2;
+            ppu_register_w = 0;
 
         }
 
         else
         {
 
-            ppu_background_loopyT &= 0xFFE0;
-            ppu_background_loopyT |= (data & 0xF8) >> 3;
-            ppu_background_loopyX = data & 0x07;
-            ppu_scroll_latch = 1;
+            ppu_register_t &= 0xFFE0;
+            ppu_register_t |= (data & 0xF8) >> 3;
+            ppu_register_x = data & 0x07;
+            ppu_register_w = 1;
 
         }
 
@@ -132,14 +129,14 @@ static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
     if (address == PPUADDR)
     {
 
-        if (ppu_addr_latch)
+        if (ppu_register_w)
         {
 
             ppu_addr |= data;
-            ppu_background_loopyT &= 0xFF00;
-            ppu_background_loopyT |= data;
-            ppu_background_loopyV = ppu_background_loopyT;
-            ppu_addr_latch = 0;
+            ppu_register_t &= 0xFF00;
+            ppu_register_t |= data;
+            ppu_register_v = ppu_register_t;
+            ppu_register_w = 0;
 
         }
 
@@ -147,9 +144,9 @@ static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
         {
 
             ppu_addr = (data << 8);
-            ppu_background_loopyT &= 0x00FF;
-            ppu_background_loopyT |= (data & 0x3F);
-            ppu_addr_latch = 1;
+            ppu_register_t &= 0x80FF;
+            ppu_register_t |= (data & 0x3F) << 8;
+            ppu_register_w = 1;
 
         }
 
@@ -246,12 +243,12 @@ static void ppu_renderbackground(int scanline)
     int attribs;
     unsigned char tile[8];
 
-    ppu_background_loopyV &= 0xfbe0;
-    ppu_background_loopyV |= (ppu_background_loopyT & 0x041f);
-    x_scroll = (ppu_background_loopyV & 0x1f);
-    y_scroll = (ppu_background_loopyV & 0x03e0) >> 5;
-    nt_addr = 0x2000 + (ppu_background_loopyV & 0x0fff);
-    at_addr = 0x2000 + (ppu_background_loopyV & 0x0c00) + 0x03c0 + ((y_scroll & 0xfffc) << 1) + (x_scroll >> 2);
+    ppu_register_v &= 0xfbe0;
+    ppu_register_v |= (ppu_register_t & 0x041f);
+    x_scroll = (ppu_register_v & 0x1f);
+    y_scroll = (ppu_register_v & 0x03e0) >> 5;
+    nt_addr = 0x2000 + (ppu_register_v & 0x0fff);
+    at_addr = 0x2000 + (ppu_register_v & 0x0c00) + 0x03c0 + ((y_scroll & 0xfffc) << 1) + (x_scroll >> 2);
 
     if ((y_scroll & 0x0002) == 0)
     {
@@ -277,7 +274,7 @@ static void ppu_renderbackground(int scanline)
     {
 
         int ttc = tile_count << 3;
-        int pt_addr = (ppu_memory[nt_addr] << 4) + ((ppu_background_loopyV & 0x7000) >> 12);
+        int pt_addr = (ppu_memory[nt_addr] << 4) + ((ppu_register_v & 0x7000) >> 12);
         char a1, a2;
 
         if (PPUCTRL_BACKGROUNDHI)
@@ -302,31 +299,31 @@ static void ppu_renderbackground(int scanline)
 
         }
 
-        if ((tile_count == 0) && (ppu_background_loopyX != 0))
+        if ((tile_count == 0) && (ppu_register_x != 0))
         {
 
-            for (i = 0; i < 8 - ppu_background_loopyX; i++)
+            for (i = 0; i < 8 - ppu_register_x; i++)
             {
 
-                ppu_background_cache[ttc + i][scanline] = tile[ppu_background_loopyX + i];
+                ppu_background_cache[ttc + i][scanline] = tile[ppu_register_x + i];
 
                 if (PPUMASK_BACKGROUNDSHOW)
-                    backend_drawpixel(ttc + i, scanline, ppu_memory[0x3f00 + (tile[ppu_background_loopyX + i])]);
+                    backend_drawpixel(ttc + i, scanline, ppu_memory[0x3f00 + (tile[ppu_register_x + i])]);
 
             }
 
         }
 
-        else if ((tile_count == 32) && (ppu_background_loopyX != 0))
+        else if ((tile_count == 32) && (ppu_register_x != 0))
         {
 
-            for (i = 0; i < ppu_background_loopyX; i++)
+            for (i = 0; i < ppu_register_x; i++)
             {
 
-                ppu_background_cache[ttc + i - ppu_background_loopyX][scanline] = tile[i];
+                ppu_background_cache[ttc + i - ppu_register_x][scanline] = tile[i];
 
                 if (PPUMASK_BACKGROUNDSHOW)
-                    backend_drawpixel(ttc + i - ppu_background_loopyX, scanline, ppu_memory[0x3f00 + (tile[i])]);
+                    backend_drawpixel(ttc + i - ppu_register_x, scanline, ppu_memory[0x3f00 + (tile[i])]);
 
             }
 
@@ -338,10 +335,10 @@ static void ppu_renderbackground(int scanline)
             for (i = 0; i < 8; i++)
             {
 
-                ppu_background_cache[ttc + i - ppu_background_loopyX][scanline] = tile[i];
+                ppu_background_cache[ttc + i - ppu_register_x][scanline] = tile[i];
 
                 if (PPUMASK_BACKGROUNDSHOW)
-                    backend_drawpixel(ttc + i - ppu_background_loopyX, scanline, ppu_memory[0x3f00 + (tile[i])]);
+                    backend_drawpixel(ttc + i - ppu_register_x, scanline, ppu_memory[0x3f00 + (tile[i])]);
 
             }
 
@@ -395,26 +392,26 @@ static void ppu_renderbackground(int scanline)
 
     }
 
-    if ((ppu_background_loopyV & 0x7000) == 0x7000)
+    if ((ppu_register_v & 0x7000) == 0x7000)
     {
 
-        ppu_background_loopyV &= 0x8fff;
+        ppu_register_v &= 0x8fff;
 
-        if ((ppu_background_loopyV & 0x03e0) == 0x03a0)
+        if ((ppu_register_v & 0x03e0) == 0x03a0)
         {
 
-            ppu_background_loopyV ^= 0x0800;
-            ppu_background_loopyV &= 0xfc1f;
+            ppu_register_v ^= 0x0800;
+            ppu_register_v &= 0xfc1f;
 
         }
 
         else
         {
 
-            if ((ppu_background_loopyV & 0x03e0) == 0x03e0)
-                ppu_background_loopyV &= 0xfc1f;
+            if ((ppu_register_v & 0x03e0) == 0x03e0)
+                ppu_register_v &= 0xfc1f;
             else
-                ppu_background_loopyV += 0x0020;
+                ppu_register_v += 0x0020;
 
         }
 
@@ -423,7 +420,7 @@ static void ppu_renderbackground(int scanline)
     else
     {
 
-        ppu_background_loopyV += 0x1000;
+        ppu_register_v += 0x1000;
 
     }
 
@@ -544,7 +541,7 @@ static void ppu_rendersprite(int y, int x, int pattern_number, int attribs, int 
                 if (!disp_spr_back)
                 {
 
-                    if (PPUMASK_BACKGROUNDSHOW)
+                    if (PPUMASK_SPRITESHOW)
                         backend_drawpixel(x + i, y + j, ppu_memory[0x3f10 + (sprite[i][j])]);
 
                 }
@@ -553,7 +550,7 @@ static void ppu_rendersprite(int y, int x, int pattern_number, int attribs, int 
                 {
 
                     if (ppu_background_cache[x + i][y + j] == 0)
-                        if (PPUMASK_BACKGROUNDSHOW)
+                        if (PPUMASK_SPRITESHOW)
                             backend_drawpixel(x + i, y + j, ppu_memory[0x3f10 + (sprite[i][j])]);
 
                 }
