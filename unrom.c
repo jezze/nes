@@ -15,3 +15,8 @@ static void unrom_access(unsigned int address, unsigned char data)
 
 }
 
+static void unrom_reset()
+{
+
+}
+

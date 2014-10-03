@@ -1,3 +1,37 @@
+enum flags6
+{
+
+    FLAGS6_HMIRROR                      = (1 << 0),
+    FLAGS6_SRAM                         = (1 << 1),
+    FLAGS6_TRAINER                      = (1 << 2)
+
+};
+
+enum flags7
+{
+
+    FLAGS7_UNISYSTEM                    = (1 << 0),
+    FLAGS7_PLAYCHOICE                   = (1 << 1),
+    FLAGS7_FORMAT                       = (2 << 2)
+
+};
+
+enum flags9
+{
+
+    FLAGS9_PAL                          = (1 << 0)
+
+};
+
+enum flags10
+{
+
+    FLAGS10_PAL                         = (1 << 1),
+    FLAGS10_SRAM                        = (1 << 4),
+    FLAGS10_BUSCONFLICT                 = (1 << 5)
+
+};
+
 struct nes_header
 {
 
@@ -14,10 +48,3 @@ struct nes_header
 };
 
 int rom_load(char *romfn, struct nes_header *header, unsigned char *ram_mem, unsigned char *ppu_mem);
-
-extern unsigned char PRG;
-extern unsigned char CHR;
-extern int OS_MIRROR;
-extern int FS_MIRROR;
-extern int SRAM;
-extern int MIRRORING;

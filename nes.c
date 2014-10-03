@@ -5,13 +5,23 @@
 #include "rom.h"
 #include "backend.h"
 
-struct nes_header header;
-unsigned char mapper;
+static struct nes_header header;
 static unsigned char memory[65536];
 static int pad1_state[8];
 static int pad1_readcount = 0;
 static int running = 1;
 static char *romfn;
+static int OS_MIRROR = 0;
+static int SRAM;
+static int MIRRORING;
+
+struct mapper
+{
+
+    void (*reset)();
+    void (*access)(unsigned int address, unsigned char data);
+
+};
 
 #include "ppu.c"
 #include "apu.c"
@@ -19,6 +29,16 @@ static char *romfn;
 #include "unrom.c"
 #include "cnrom.c"
 #include "mmc3.c"
+
+struct mapper mappers[256] = {
+    {0 , 0},
+    {mmc1_reset, mmc1_access},
+    {unrom_reset, unrom_access},
+    {cnrom_reset, cnrom_access},
+    {mmc3_reset, mmc3_access}
+};
+
+struct mapper *mapper = &mappers[0];
 
 void input_set(int key)
 {
@@ -48,31 +68,31 @@ void input_reset()
 
 }
 
+unsigned int input_memread(unsigned int address)
+{
+
+    address = pad1_state[pad1_readcount];
+
+    if (pad1_readcount == 7)
+        pad1_readcount = 0;
+    else
+        pad1_readcount++;
+
+    return address;
+
+}
+
 unsigned char ram_read(unsigned int address)
 {
 
-    if (address < 0x2000 || address > 0x7FFF)
-        return memory[address];
-
-    if ((address > 0x1fff && address < 0x4000) || address == 0x4014)
+    if ((address >= 0x2000 && address < 0x4000) || address == 0x4014)
         return ppu_memread(address);
 
-    if ((address > 0x3fff && address < 0x4014) || address == 0x4015 || address == 0x4017)
+    if ((address >= 0x4000 && address < 0x4014) || address == 0x4015 || address == 0x4017)
         return apu_memread(address);
 
     if (address == 0x4016)
-    {
-
-        memory[address] = pad1_state[pad1_readcount];
-
-        if (pad1_readcount == 7)
-            pad1_readcount = 0;
-        else
-            pad1_readcount++;
-
-        return memory[address];
-
-    }
+        return input_memread(address);
 
     return memory[address];
 
@@ -81,7 +101,19 @@ unsigned char ram_read(unsigned int address)
 void ram_write(unsigned int address, unsigned char data)
 {
 
-    if ((address > 0x1fff && address < 0x4000) || address == 0x4014)
+    if (address < 0x2000)
+    {
+
+        memory[address] = data;
+        memory[address + 2048] = data;
+        memory[address + 4096] = data;
+        memory[address + 6144] = data;
+
+        return;
+
+    }
+
+    if ((address >= 0x2000 && address < 0x4000) || address == 0x4014)
     {
 
         memory[address] = ppu_memwrite(address, data);
@@ -90,7 +122,7 @@ void ram_write(unsigned int address, unsigned char data)
 
     }
 
-    if ((address > 0x3fff && address < 0x4014) || address == 0x4015 || address == 0x4017)
+    if ((address >= 0x4000 && address < 0x4014) || address == 0x4015 || address == 0x4017)
     {
 
         memory[address] = apu_memwrite(address, data);
@@ -108,7 +140,7 @@ void ram_write(unsigned int address, unsigned char data)
 
     }
 
-    if (address > 0x5fff && address < 0x8000)
+    if (address >= 0x6000 && address < 0x8000)
     {
 
         if (SRAM == 1)
@@ -120,53 +152,8 @@ void ram_write(unsigned int address, unsigned char data)
 
     }
 
-    if (address < 0x2000)
-    {
-
-        memory[address] = data;
-        memory[address + 2048] = data;
-        memory[address + 4096] = data;
-        memory[address + 6144] = data;
-
-        return;
-
-    }
-
-    if (mapper == 1)
-    {
-
-        mmc1_access(address, data);
-
-        return;
-
-    }
-
-    if (mapper == 2)
-    {
-
-        unrom_access(address, data);
-
-        return;
-
-    }
-
-    if (mapper == 3)
-    {
-
-        cnrom_access(address, data);
-
-        return;
-
-    }
-
-    if (mapper == 4)
-    {
-
-        mmc3_access(address, data);
-
-        return;
-
-    }
+    if (mapper->access)
+        mapper->access(address, data);
 
     memory[address] = data;
 
@@ -232,7 +219,7 @@ static void run(int width, int height, int start_int, int vblank_int, int vblank
         backend_update();
 
         currenttime = backend_getticks();
-        deltatime = 20 - (currenttime - starttime);
+        deltatime = 16 - (currenttime - starttime);
 
         if (deltatime > 0)
             backend_delay(deltatime);
@@ -260,6 +247,7 @@ int main(int argc, char **argv)
     int pal_scanline_refresh = pal_vblank_int / 313;
     int width = 256;
     int height = 240;
+    int rcb;
 
     if (argc < 2)
         return 1;
@@ -269,10 +257,14 @@ int main(int argc, char **argv)
     if (rom_load(romfn, &header, memory, ppu_memory) == 1)
         return 1;
 
-    mapper = (header.flags6 >> 4) | (header.flags7 & 0xF0);
+    rcb = (header.flags6 - ((header.flags6 >> 4) << 4));
+    MIRRORING = (rcb & 1) ? 1 : 0;
+    SRAM = (rcb & 2) ? 1 : 0;
 
-    if (mapper == 4)
-        mmc3_reset();
+    mapper = &mappers[(header.flags6 >> 4) | (header.flags7 & 0xF0)];
+
+    if (mapper->reset)
+        mapper->reset();
 
     if (SRAM == 1)
         backend_readsavefile("game.sav", memory);

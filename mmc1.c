@@ -26,11 +26,11 @@ static void mmc1_switchchr(int bank, int pagesize, int area)
     unsigned int address = (pagesize && area) ? 0x1000 : 0x0000;
     int size = (pagesize) ? 4096 : 8192;
 
-    backend_read(romfn, 16 + (16384 * PRG) + (bank * size), size, ppu_memory + address);
+    backend_read(romfn, 16 + (16384 * header.prgromsize) + (bank * size), size, ppu_memory + address);
 
 }
 
-static void mmc1_access(unsigned int address,unsigned char data)
+static void mmc1_access(unsigned int address, unsigned char data)
 {
 
     if (address > 0x7fff && address < 0xa000)
@@ -181,6 +181,11 @@ static void mmc1_access(unsigned int address,unsigned char data)
         }
 
     }
+
+}
+
+static void mmc1_reset()
+{
 
 }
 

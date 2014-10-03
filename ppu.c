@@ -174,11 +174,6 @@ static unsigned char ppu_memwrite(unsigned int address, unsigned char data)
 
             }
 
-            else if (FS_MIRROR == 1)
-            {
-
-            }
-
             else
             {
 

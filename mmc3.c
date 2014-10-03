@@ -21,14 +21,7 @@ static void mmc3_switchchr(unsigned int address, int bank, int pagecount)
 
     int size = 1024;
 
-    backend_read(romfn, 16 + (16384 * PRG) + (bank * size), size * pagecount, ppu_memory + address);
-
-}
-
-static void mmc3_reset()
-{
-
-    backend_read(romfn, 16, 8192, memory + 0xa000);
+    backend_read(romfn, 16 + (16384 * header.prgromsize) + (bank * size), size * pagecount, ppu_memory + address);
 
 }
 
@@ -47,7 +40,7 @@ static void mmc3_access(unsigned int address, unsigned char data)
             if (mmc3_prg_page != 1)
             {
 
-                mmc3_switchprg(0x8000, (PRG * 2) - 2);
+                mmc3_switchprg(0x8000, (header.prgromsize * 2) - 2);
                 mmc3_switchprg(0xc000, mmc3_prg_bank0);
 
                 mmc3_prg_page = 1;
@@ -62,7 +55,7 @@ static void mmc3_access(unsigned int address, unsigned char data)
             if (mmc3_prg_page != 0)
             {
 
-                mmc3_switchprg(0xc000, (PRG * 2) - 2);
+                mmc3_switchprg(0xc000, (header.prgromsize * 2) - 2);
                 mmc3_switchprg(0x8000, mmc3_prg_bank0);
 
                 mmc3_prg_page = 0;
@@ -184,6 +177,13 @@ static void mmc3_access(unsigned int address, unsigned char data)
         break;
 
     }
+
+}
+
+static void mmc3_reset()
+{
+
+    backend_read(romfn, 16, 8192, memory + 0xa000);
 
 }
 
